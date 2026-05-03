@@ -16,6 +16,11 @@ from app.schemas.user import (
     PasswordUpdate,
 )
 
+from app.schemas.token import (
+    Token,
+    TokenResponse,
+)
+
 __all__ = [
     'CalculationType',
     'CalculationBase',
@@ -29,4 +34,6 @@ __all__ = [
     'UserLogin',
     'UserUpdate',
     'PasswordUpdate',
+    'Token',
+    'TokenResponse',
 ]

@@ -1,0 +1,5 @@
+.coverage*
+*.log
+*.swp
+__pycache__/
+venv/

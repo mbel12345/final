@@ -98,8 +98,8 @@ jobs:
         with:
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/assignment_14:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/assignment_14:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/final:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/final:${{ github.sha }}
           platforms: linux/amd64,linux/arm64
-          cache-from: type=registry,ref=mbel12345/assignment_14:cache
+          cache-from: type=registry,ref=mbel12345/final:cache
           cache-to: type=inline,mode=max

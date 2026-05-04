@@ -1,0 +1,11 @@
+CVE-2024-6345
+
+#│ starlette (METADATA)        │ CVE-2025-62727 │          │        │ 0.45.3            │ 0.49.1        │ starlette: Starlette DoS via Range header merging
+# https://avd.aquasec.com/nvd/cve-2025-62727
+# Cannot be resolved because there are no versions of fastAPI compatible with starlette>=0.49.1
+CVE-2025-62727
+
+# │ python-jose (METADATA)      │ CVE-2024-33663 │ CRITICAL │        │ 3.3.0             │ 3.4.0         │ python-jose: algorithm confusion with OpenSSH ECDSA keys and other key formats
+# https://avd.aquasec.com/nvd/cve-2024-33663
+# Cannot be resolved because there are pyasn would have to be downgraded to be compatible with python-jose 3.4.0
+CVE-2024-33663

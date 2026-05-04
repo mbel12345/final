@@ -83,20 +83,17 @@ def test_get_db():
     except StopIteration:
         pass
 
-def test_init_db():
+def test_drop_db_and_init_db():
 
-    # Test init_db (table creation)
+    # Test drop_db (table deletion) and init_db (table creation)
+    # Combined into one test so that drop_db testing doesn't result in subsequent tests failing
 
-    init_db(engine)
+    drop_db(engine)
     with engine.connect() as conn:
         result = conn.execute(text('SELECT 1'))
         assert result.scalar() == 1
 
-def test_drop_db():
-
-    # Test drop_db (table deletion)
-
-    drop_db(engine)
+    init_db(engine)
     with engine.connect() as conn:
         result = conn.execute(text('SELECT 1'))
         assert result.scalar() == 1

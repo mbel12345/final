@@ -6,6 +6,7 @@ from faker import Faker
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from typing import Generator
+from uuid import uuid4
 
 from app.database import get_engine
 from app.database import get_sessionmaker
@@ -37,6 +38,19 @@ def create_fake_user() -> dict[str, str]:
         'email': fake.unique.email(),
         'username': fake.unique.user_name(),
         'password': fake.password(length=12),
+    }
+
+def get_unique_user_data():
+
+    # Create user that has uuids in the email and password, to more reliably prevent variable conflicts
+
+    unique_id = uuid4()
+    return {
+        'first_name': 'John',
+        'last_name': 'Smith',
+        'email': f'jsmith{unique_id}@example.com',
+        'username': f'smith{unique_id}',
+        'password': 'SecurePass123!',
     }
 
 @contextmanager
@@ -113,3 +127,43 @@ def seed_users(db_session: Session, request) -> list[User]:
     db_session.commit()
     logger.info(f'Seeded /{len(users)} users.')
     return users
+
+
+def register_and_login(client):
+
+    # Helper function to register a new user and log in, returning the token response data
+
+    user_data = get_unique_user_data()
+    user_data['confirm_password'] = user_data['password']
+
+    reg_response = client.post('/auth/register', json=user_data)
+    assert reg_response.status_code == 201, f'User registration failed: {reg_response.text}'
+
+    login_payload = {
+        'username': user_data['username'],
+        'password': user_data['password'],
+    }
+    login_response = client.post('/auth/login', json=login_payload)
+    assert login_response.status_code == 200, f'Login failed: {login_response.text}'
+    result = login_response.json()
+    result['password'] = user_data['password']
+    return result
+
+def pytest_addoption(parser):
+
+    '''
+    Add custom command line options:
+      --run-slow     : Run tests marked as 'slow'
+    '''
+
+    parser.addoption('--run-slow', action='store_true', help='Run tests marked as slow')
+
+def pytest_collection_modifyitems(config, items):
+
+    # Skip tests marked as 'slow' unless --run-slow is given
+
+    if not config.getoption('--run-slow'):
+        skip_slow = pytest.mark.skip(reason='use --run-slow to run')
+        for item in items:
+            if 'slow' in item.keywords:
+                item.add_marker(skip_slow)

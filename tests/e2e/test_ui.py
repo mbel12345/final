@@ -715,25 +715,30 @@ def test_ui_edit_calc_pass(page, fastapi_server):
     update_button.click()
     page.wait_for_timeout(1000)
 
-    # Check that the rows are updated in the dashboard
-
+    # Go to dashboard and wait for all rows to load
     goto(page, '/dashboard')
-
     page.wait_for_selector('text=34, 10, 6') # Wait for first row to load
+    page.wait_for_selector("#calculationsTable tr:has-text('addition')")
+    page.wait_for_selector("#calculationsTable tr:has-text('subtraction')")
+    page.wait_for_selector("#calculationsTable tr:has-text('multiplication')")
+
+    # Check rows
+
     rows = page.locator('#calculationsTable tr')
+    addition_row = page.locator("#calculationsTable tr:has-text('addition')")
+    subtraction_row = page.locator("#calculationsTable tr:has-text('subtraction')")
+    multiplication_row = page.locator("#calculationsTable tr:has-text('multiplication')")
+
     expect(rows).to_have_count(3)
 
-    expect(rows.nth(0)).to_contain_text('addition')
-    expect(rows.nth(0)).to_contain_text('34, 10, 6')
-    expect(rows.nth(0)).to_contain_text('50')
+    expect(addition_row).to_contain_text('34, 10, 6')
+    expect(addition_row).to_contain_text('50')
 
-    expect(rows.nth(1)).to_contain_text('subtraction')
-    expect(rows.nth(1)).to_contain_text('24, 10, 2.5')
-    expect(rows.nth(1)).to_contain_text('11.5')
+    expect(subtraction_row).to_contain_text('24, 10, 2.5')
+    expect(subtraction_row).to_contain_text('11.5')
 
-    expect(rows.nth(2)).to_contain_text('multiplication')
-    expect(rows.nth(2)).to_contain_text('24, 10, 2.5')
-    expect(rows.nth(2)).to_contain_text('600')
+    expect(multiplication_row).to_contain_text('24, 10, 2.5')
+    expect(multiplication_row).to_contain_text('600')
 
 @pytest.mark.parametrize('invalid_input', [
     '',

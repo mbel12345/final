@@ -9,7 +9,7 @@ client = TestClient(app)
 
 
 # ---------------------------------------------------
-# Total Calculations
+# HTML Template
 # ---------------------------------------------------
 
 
@@ -20,6 +20,11 @@ def test_statistics_page():
     response = client.get('/statistics')
     assert response.status_code == 200
     assert 'Total Calculations' in response.text
+
+
+# ---------------------------------------------------
+# Total Calculations
+# ---------------------------------------------------
 
 
 def test_statistics_total_calcs():

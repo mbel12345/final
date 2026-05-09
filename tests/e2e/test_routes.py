@@ -4,6 +4,7 @@ from unittest.mock import patch
 from uuid import uuid4
 
 from app.main import app
+from tests.conftest import get_unique_user_data
 from tests.conftest import register_and_login
 
 client = TestClient(app)
@@ -74,14 +75,8 @@ def test_user_registration():
 
     # Test user registration
 
-    payload = {
-        'first_name': 'Alice',
-        'last_name': 'Smith',
-        'email': 'alice.smith@example.com',
-        'username': 'alicesmith',
-        'password': 'SecurePass123!',
-        'confirm_password': 'SecurePass123!',
-    }
+    payload = get_unique_user_data()
+    payload['confirm_password'] = payload['password']
     response = client.post('/auth/register', json=payload)
     assert response.status_code == 201, f'Expected 201 but got {response.status_code}. Response: {response.text}'
     data = response.json()
@@ -98,14 +93,8 @@ def test_user_login():
 
     # Test valid login
 
-    test_user = {
-        'first_name': 'Bob',
-        'last_name': 'Jones',
-        'email': 'bob.jones@example.com',
-        'username': 'bobjones',
-        'password': 'SecurePass123!',
-        'confirm_password': 'SecurePass123!'
-    }
+    test_user = get_unique_user_data()
+    test_user['confirm_password'] = test_user['password']
 
     # Register user
     reg_response = client.post('/auth/register', json=test_user)
@@ -180,14 +169,8 @@ def test_user_registration_fail():
 
     # Test failure to register
 
-    payload = {
-        'first_name': 'Alice',
-        'last_name': 'Smith',
-        'email': 'alice.smith2@example.com',
-        'username': 'alice1234',
-        'password': 'SecurePass123!',
-        'confirm_password': 'SecurePass123!',
-    }
+    payload = get_unique_user_data()
+    payload['confirm_password'] = payload['password']
     response = client.post('/auth/register', json=payload)
     assert response.status_code == 201, f'Expected 201 but got {response.status_code}. Response: {response.text}'
 
@@ -199,14 +182,8 @@ def test_user_login_fail():
 
     # Test invalid login
 
-    test_user = {
-        'first_name': 'Bob',
-        'last_name': 'Jones',
-        'email': 'bob.jones2@example.com',
-        'username': 'bobjones2',
-        'password': 'SecurePass123!',
-        'confirm_password': 'SecurePass123!'
-    }
+    test_user = get_unique_user_data()
+    test_user['confirm_password'] = test_user['password']
 
     # Register user
     reg_response = client.post('/auth/register', json=test_user)

@@ -240,6 +240,7 @@ def test_init_with_hashed_password(db_session):
     # Test initializing a User with hashed_password included
 
     user_data = get_unique_user_data()
+    user_data['hashed_password'] = 'password123'
     user = User(**user_data)
     db_session.add(user)
     db_session.commit()

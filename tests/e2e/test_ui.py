@@ -720,6 +720,10 @@ def test_ui_edit_calc_pass(page, fastapi_server):
     goto(page, '/dashboard')
 
     page.wait_for_selector('text=34, 10, 6') # Wait for first row to load
+    page.wait_for_selector('text=addition')
+    page.wait_for_selector('text=subtraction')
+    page.wait_for_selector('text=multiplication')
+
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(3)
 

@@ -7,46 +7,19 @@ from fastapi.testclient import TestClient
 from playwright.sync_api import expect
 
 from app.main import app
+from tests.conftest import BASE_PAGE
 from tests.conftest import get_unique_user_data
+from tests.conftest import goto
+from tests.conftest import login
 from tests.conftest import register_and_login
 
 client = TestClient(app)
-
-BASE_PAGE = 'http://127.0.0.1:8002'
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 )
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------
-# Helper Functions
-# ---------------------------------------------------
-
-def goto(page, url):
-
-    '''
-    Helper function to sanitize the URL and go to it
-    '''
-
-    final_url = f"{BASE_PAGE}/{url.lstrip('/')}"
-    logger.info(f'goto: {final_url}')
-    page.goto(final_url, wait_until='commit')
-
-def login(page, user_info):
-
-    goto(page, '/login')
-
-    page.fill('#username', user_info['username'])
-    page.fill('#password', user_info['password'])
-
-    with page.expect_response('**/login') as response:
-        page.click('button:text("Sign in")')
-
-    assert response.value.status == 200
-
-    time.sleep(3)
 
 # ---------------------------------------------------
 # Home Page
@@ -323,6 +296,7 @@ def test_ui_dashboard_create_calc(page, fastapi_server):
         page.click('button:text("Calculate")')
         page.wait_for_timeout(100)
 
+    page.wait_for_selector('text=24, 10, 2.5') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(3)
 
@@ -353,6 +327,7 @@ def test_ui_dashboard_create_calc_invalid_inputs_success(page, fastapi_server):
         page.click('button:text("Calculate")')
         page.wait_for_timeout(100)
 
+    page.wait_for_selector('text=24, 10, 2.5') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(3)
 
@@ -440,6 +415,7 @@ def test_ui_dashboard_history(page, fastapi_server):
 
     goto(page, '/dashboard')
 
+    page.wait_for_selector('text=24, 10, 2.5') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(3)
 
@@ -475,6 +451,8 @@ def test_ui_dashboard_delete(page, fastapi_server):
     # Verify history has 3 rows
     login(page, user_data)
     goto(page, '/dashboard')
+
+    page.wait_for_selector('text=24, 10, 2.5') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(3)
 
@@ -491,6 +469,7 @@ def test_ui_dashboard_delete(page, fastapi_server):
 
     # Check that the rows are as expected
 
+    page.wait_for_selector('text=24, 10, 2.5') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(2)
 
@@ -611,6 +590,7 @@ def test_ui_view_calc_delete(page, fastapi_server):
 
     # Check that the rows are as expected after re-routing to dashboard
 
+    page.wait_for_selector('text=24, 10, 2.5') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(2)
 
@@ -738,6 +718,8 @@ def test_ui_edit_calc_pass(page, fastapi_server):
     # Check that the rows are updated in the dashboard
 
     goto(page, '/dashboard')
+
+    page.wait_for_selector('text=34, 10, 6') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(3)
 

@@ -6,7 +6,7 @@ import subprocess
 import time
 
 from contextlib import contextmanager
-from faker import Faker
+from datetime import datetime, timedelta
 from playwright.sync_api import Browser, sync_playwright
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -30,20 +30,13 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-fake = Faker()
-Faker.seed(12345)
+BASE_PAGE = 'http://127.0.0.1:8002'
 
-def create_fake_user() -> dict[str, str]:
 
-    # Generate a dictionary of fake user data for testing
+# ---------------------------------------------------
+# Helper Functions
+# ---------------------------------------------------
 
-    return {
-        'first_name': fake.first_name(),
-        'last_name': fake.last_name(),
-        'email': fake.unique.email(),
-        'username': fake.unique.user_name(),
-        'password': fake.password(length=12),
-    }
 
 def get_unique_user_data():
 
@@ -58,6 +51,7 @@ def get_unique_user_data():
         'password': 'SecurePass123!',
     }
 
+
 @contextmanager
 def managed_db_session():
 
@@ -70,6 +64,45 @@ def managed_db_session():
         raise
     finally:
         session.close()
+
+
+def goto(page, url):
+
+    # Helper function to sanitize the URL and go to it
+
+    final_url = f"{BASE_PAGE}/{url.lstrip('/')}"
+    logger.info(f'goto: {final_url}')
+    page.goto(final_url, wait_until='commit')
+
+
+def login(page, user_info):
+
+    # Login via UI, which needs to happen at beginning of each UI test
+
+    goto(page, '/login')
+
+    page.fill('#username', user_info['username'])
+    page.fill('#password', user_info['password'])
+
+    with page.expect_response('**/login') as response:
+        page.click('button:text("Sign in")')
+
+    assert response.value.status == 200
+
+    time.sleep(3)
+
+
+def midnight_n_days_ago(num_days: int):
+
+    # Return YYYY-MM-DD 00:00:00 for the date num_days ago
+
+    return (datetime.now() - timedelta(days=num_days)).replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')
+
+
+# ---------------------------------------------------
+# General Fixtures
+# ---------------------------------------------------
+
 
 @pytest.fixture(scope='session', autouse=True)
 def setup_test_database(request):
@@ -103,17 +136,11 @@ def db_session() -> Generator[Session, None, None]:
         session.close()
 
 @pytest.fixture
-def fake_user_data() -> dict[str, str]:
-
-    # Provide fake user data
-    return create_fake_user()
-
-@pytest.fixture
 def test_user(db_session: Session) -> User:
 
     # Create and return a single test user
 
-    user_data = create_fake_user()
+    user_data = get_unique_user_data()
     user = User(**user_data)
     db_session.add(user)
     db_session.commit()
@@ -127,7 +154,7 @@ def seed_users(db_session: Session, request) -> list[User]:
     # Seed mlutiple test users in the database
 
     num_users = getattr(request, 'param', 5)
-    users = [User(**create_fake_user()) for _ in range(num_users)]
+    users = [User(**get_unique_user_data()) for _ in range(num_users)]
     db_session.add_all(users)
     db_session.commit()
     logger.info(f'Seeded /{len(users)} users.')

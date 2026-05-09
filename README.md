@@ -49,6 +49,8 @@ In second WSL/VS Code Terminal:
 pytest
 ```
 
+To run the test cases while preserving the database, copy .env_local to .env, which has DROP_DB=False
+
 ## Run FastAPI app locally
 In WSL/VS Code Terminal:
 ```bash

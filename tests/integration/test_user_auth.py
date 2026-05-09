@@ -6,12 +6,13 @@ from fastapi import HTTPException
 from app.models.user import User
 from app.schemas.token import TokenType
 from app.auth.jwt import create_token
-from tests.conftest import create_fake_user
+from tests.conftest import get_unique_user_data
 
-def test_password_hashing(db_session, fake_user_data):
+def test_password_hashing():
 
     # Test password hashing and verification functionality
 
+    fake_user_data = get_unique_user_data()
     original_password = 'TestPass123'
     hashed = User.hash_password(original_password)
 
@@ -31,7 +32,7 @@ def test_hashed_password(db_session):
 
     # Test that user.hased_password returns the hashed password
 
-    user_data = create_fake_user()
+    user_data = get_unique_user_data()
     User.register(db_session, user_data)
     user_row = db_session.query(User).filter_by(
         email=user_data['email'],
@@ -43,17 +44,18 @@ def test_verify_password(db_session):
 
     # Test that user.verify_password checks the password
 
-    user_data = create_fake_user()
+    user_data = get_unique_user_data()
     User.register(db_session, user_data)
     user_row = db_session.query(User).filter_by(
         email=user_data['email'],
     ).first()
     assert user_row.verify_password(user_data['password'])
 
-def test_user_registration(db_session, fake_user_data):
+def test_user_registration(db_session):
 
     # Test successful user registration
 
+    fake_user_data = get_unique_user_data()
     fake_user_data['password'] = 'TestPass123!'
 
     user = User.register(db_session, fake_user_data)
@@ -71,7 +73,7 @@ def test_register_with_short_password(db_session):
 
     # Test that user.register fails for a short password
 
-    user_data = create_fake_user()
+    user_data = get_unique_user_data()
     user_data['password'] = 'pass1'
     with pytest.raises(ValueError, match='Password must be at least 6 characters long'):
         User.register(db_session, user_data)
@@ -80,7 +82,7 @@ def test_register_duplicate_user(db_session):
 
     # Test that user.register fails for a duplicate email or username
 
-    user_data_1 = create_fake_user()
+    user_data_1 = get_unique_user_data()
     User.register(db_session, user_data_1)
 
     user_data_2 = dict(user_data_1)
@@ -97,7 +99,7 @@ def test_authenticate(db_session):
 
     # Test successful authentication
 
-    user_data = create_fake_user()
+    user_data = get_unique_user_data()
     User.register(db_session, user_data)
     result = User.authenticate(db_session, user_data['email'], user_data['password'])
 
@@ -111,16 +113,17 @@ def test_authenticate_fail(db_session):
 
     # Test failed authentication
 
-    user_data = create_fake_user()
+    user_data = get_unique_user_data()
     User.register(db_session, user_data)
     result = User.authenticate(db_session, user_data['email'], user_data['password'] + 'xxxx')
 
     assert result == None
 
-def test_user_last_login_update(db_session, fake_user_data):
+def test_user_last_login_update(db_session):
 
     # Test that last_login is updated on authentication
 
+    fake_user_data = get_unique_user_data()
     fake_user_data['password'] = 'TestPass123!'
     user = User.register(db_session, fake_user_data)
     db_session.commit()
@@ -134,24 +137,17 @@ def test_unique_email_username(db_session):
 
     # Test uniqueness constraints for email and username
 
-    user1_data = {
-        'first_name': 'Test',
-        'last_name': 'User1',
-        'email': 'unique_test@example.com',
-        'username': 'uniqueuser',
-        'password': 'TestPass123!',
-    }
+    user1_data = get_unique_user_data()
+    user1_data['first_name'] = 'Test'
+    user1_data['last_name'] = 'User'
 
     User.register(db_session, user1_data)
     db_session.commit()
 
-    user2_data = {
-        'first_name': 'Test',
-        'last_name': 'User2',
-        'email': 'unique_test@example.com',
-        'username': 'differentuser',
-        'password': 'TestPass123!',
-    }
+    user2_data = get_unique_user_data()
+    user2_data['first_name'] = 'Test'
+    user2_data['last_name'] = 'User'
+    user2_data['email'] = user1_data['email']
 
     with pytest.raises(ValueError, match='Username or email already exists'):
         User.register(db_session, user2_data)
@@ -160,7 +156,7 @@ def test_verify_token(db_session):
 
     # Test that token gets verified properly
 
-    user_data = create_fake_user()
+    user_data = get_unique_user_data()
     User.register(db_session, user_data)
     auth_result = User.authenticate(db_session, user_data['email'], user_data['password'])
     assert auth_result is not None, 'Auth failed'
@@ -172,7 +168,7 @@ def test_verify_token_fail_1(db_session):
 
     # Test that invalid token gets rejected
 
-    user_data = create_fake_user()
+    user_data = get_unique_user_data()
     User.register(db_session, user_data)
     auth_result = User.authenticate(db_session, user_data['email'], user_data['password'])
     assert auth_result is not None, 'Auth failed'
@@ -188,7 +184,7 @@ def test_verify_token_fail_2(monkeypatch, db_session):
 
     monkeypatch.setattr('app.models.user.jwt.decode', fake_decode)
 
-    user_data = create_fake_user()
+    user_data = get_unique_user_data()
     User.register(db_session, user_data)
     auth_result = User.authenticate(db_session, user_data['email'], user_data['password'])
     assert auth_result is not None, 'Auth failed'
@@ -205,7 +201,7 @@ def test_verify_token_fail_3(monkeypatch, db_session):
 
     monkeypatch.setattr('app.models.user.jwt.decode', fake_decode)
 
-    user_data = create_fake_user()
+    user_data = get_unique_user_data()
     User.register(db_session, user_data)
     auth_result = User.authenticate(db_session, user_data['email'], user_data['password'])
     assert auth_result is not None, 'Auth failed'
@@ -221,10 +217,11 @@ def test_invalid_token():
     result = User.verify_token(invalid_token)
     assert result is None
 
-def test_create_token_and_verify(db_session, fake_user_data):
+def test_create_token_and_verify(db_session):
 
     # Test token creation and verification
 
+    fake_user_data = get_unique_user_data()
     fake_user_data['password'] = 'TestPass123!'
     user = User.register(db_session, fake_user_data)
     db_session.commit()
@@ -238,7 +235,7 @@ def test_create_token_and_verify(db_session, fake_user_data):
 
 def test_create_token_expires_delta(db_session):
 
-    user_data = create_fake_user()
+    user_data = get_unique_user_data()
     user = User(**user_data)
     db_session.add(user)
     db_session.commit()
@@ -263,7 +260,7 @@ def test_create_token_fail(monkeypatch, db_session):
 
     monkeypatch.setattr('app.auth.jwt.jwt.encode', fake_encode)
 
-    user_data = create_fake_user()
+    user_data = get_unique_user_data()
     user = User(**user_data)
     db_session.add(user)
     db_session.commit()
@@ -278,10 +275,11 @@ def test_create_token_fail(monkeypatch, db_session):
             expires_delta=timedelta(seconds=1),
         )
 
-def test_authenticate_with_email(db_session, fake_user_data):
+def test_authenticate_with_email(db_session):
 
     # Test with authentication via email rather than username
 
+    fake_user_data = get_unique_user_data()
     fake_user_data['password'] = 'TestPass123!'
     User.register(db_session, fake_user_data)
     db_session.commit()

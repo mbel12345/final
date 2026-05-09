@@ -1,7 +1,17 @@
+import logging
+
 from sqlalchemy.engine import Engine
 
+from app.core.config import settings
 from app.database import Base
 from app.database import get_engine
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+)
+
+logger = logging.getLogger(__name__)
 
 def init_db(engine: Engine) -> None:
 
@@ -9,7 +19,9 @@ def init_db(engine: Engine) -> None:
 
 def drop_db(engine: Engine) -> None:
 
-    Base.metadata.drop_all(bind=engine)
+    if settings.DROP_DB:
+        logger.info('Dropping database...')
+        Base.metadata.drop_all(bind=engine)
 
 if __name__ == '__main__':
 

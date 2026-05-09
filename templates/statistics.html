@@ -1,0 +1,337 @@
+{% extends "layout.html" %}
+{% block title %}Statistics{% endblock %}
+{% block head %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <script>Chart.register(ChartDataLabels)</script>
+{% endblock %}
+
+{% block content %}
+
+<!-- Error/Success Alerts -->
+<div
+  id="errorAlert"
+  class="hidden bg-red-100 border border-red-500 text-red-800
+         px-4 py-3 rounded-md mb-4 transition-all duration-300"
+>
+  <div class="flex items-center">
+    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+    </svg>
+    <span id="errorMessage" class="block sm:inline"></span>
+  </div>
+</div>
+<div
+  id="successAlert"
+  class="hidden bg-green-100 border border-green-500 text-green-800
+         px-4 py-3 rounded-md mb-4 transition-all duration-300"
+>
+  <div class="flex items-center">
+    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+    </svg>
+    <span id="successMessage" class="block sm:inline"></span>
+  </div>
+</div>
+
+<!-- Filter Card -->
+<div
+  class="bg-white shadow-lg rounded-lg mb-6 p-6
+         transition-all duration-300 hover:shadow-xl border border-gray-100"
+>
+  <h1 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+    Filter By
+  </h1>
+  <form id="filterForm" class="space-y-5">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+      <!-- Type -->
+      <div>
+        <label for="calcType" class="block text-sm font-medium text-gray-700 mb-1">Operation Type</label>
+        <select
+          id="calcType"
+          name="type"
+          class="block w-full rounded-md border-gray-300 shadow-sm
+                 focus:border-blue-500 focus:ring-blue-500 py-2"
+        >
+          <option value="all">All</option>
+          <option value="addition">Addition</option>
+          <option value="subtraction">Subtraction</option>
+          <option value="multiplication">Multiplication</option>
+          <option value="division">Division</option>
+        </select>
+      </div>
+      <!-- Start Time -->
+      <div class="mb-3">
+        <label for="startTime" class="block text-sm font-medium text-gray-700 mb-1">Start Time (UTC)</label>
+        <div class="relative">
+          <input id="startTime" type="text" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 text-sm" placeholder="YYYY-MM-DD HH:MM:SS">
+          <span class="absolute right-3 top-2.5 text-gray-300">
+            <i class="bi bi-calendar"></i>
+          </span>
+        </div>
+      </div>
+      <!-- End Time -->
+      <div class="mb-3">
+        <label for="endTime" class="block text-sm font-medium text-gray-700 mb-1">End Time (UTC)</label>
+        <div class="relative">
+          <input id="endTime" type="text" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 text-sm" placeholder="YYYY-MM-DD HH:MM:SS">
+          <span class="absolute right-3 top-2.5 text-gray-300">
+            <i class="bi bi-calendar"></i>
+          </span>
+        </div>
+      </div>
+      <!-- Filter Button -->
+      <div>
+        <label class="block text-sm font-medium opacity-0 mb-1">Filter</label>
+        <button
+          id="filterBtn"
+          type="submit"
+          class="bg-blue-700 text-white px-6 py-2 text-sm
+                rounded-md hover:bg-blue-800 transition-colors duration-200
+                focus:outline-none focus:ring-2 focus:ring-offset-2
+                focus:ring-blue-500 font-medium flex items-center"
+        >
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+          </svg>
+          Filter
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Total Calculations Card -->
+<div
+  class="bg-white shadow-lg rounded-lg p-6 transition-all duration-300
+         hover:shadow-xl border border-gray-100"
+>
+  <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+    <svg class="w-5 h-5 mr-2 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+    </svg>
+    Total Calculations
+  </h2>
+  <div class="overflow-x-auto rounded-lg border border-gray-200 p-4">
+    <div class="flex items-center mb-2">
+      <span class="w-64">Add Calculations:</span>
+      <span id="additionCalcTotal" class="text-right flex-1">5</span>
+    </div>
+    <div class="flex items-center mb-2">
+      <span class="w-64">Subtract Calculations:</span>
+      <span id="subtractionCalcTotal" class="text-right flex-1">5</span>
+    </div>
+    <div class="flex items-center mb-2">
+      <span class="w-64">Multiply Calculations:</span>
+      <span id="multiplicationCalcTotal" class="text-right flex-1">5</span>
+    </div>
+    <div class="flex items-center mb-2">
+      <span class="w-64">Subtract Calculations:</span>
+      <span id="divisionCalcTotal" class="text-right flex-1">5</span>
+    </div>
+    <div class="border-t-2 border-gray-400 ml-auto my-3"></div>
+    <div class="flex items-center mb-2">
+      <span class="w-64 font-bold">Total Calculations:</span>
+      <span id="allCalcTotal" class="text-right flex-1 font-bold">20</span>
+    </div>
+  </div>
+  <div class="flex gap-4 items-start">
+    <div class="w-50 h-50">
+      <canvas id="calcsPie"></canvas>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+
+document.addEventListener("DOMContentLoaded", function() {
+  // Check if user is logged in
+  const token = localStorage.getItem("access_token");
+  if (!token) {
+    window.location.href = "/login";
+    return;
+  }
+
+  // Alert helper functions
+  function showError(msg) {
+    const errorAlert = document.getElementById("errorAlert");
+    const errorMessage = document.getElementById("errorMessage");
+    errorMessage.textContent = msg;
+    errorAlert.classList.remove("hidden");
+
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+      errorAlert.classList.add("opacity-0");
+      setTimeout(() => {
+        errorAlert.classList.add("hidden");
+        errorAlert.classList.remove("opacity-0");
+      }, 300);
+    }, 5000);
+
+    // Scroll to the error message if not visible
+    errorAlert.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function showSuccess(msg) {
+    const successAlert = document.getElementById("successAlert");
+    const successMessage = document.getElementById("successMessage");
+    successMessage.textContent = msg;
+    successAlert.classList.remove("hidden");
+
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+      successAlert.classList.add("opacity-0");
+      setTimeout(() => {
+        successAlert.classList.add("hidden");
+        successAlert.classList.remove("opacity-0");
+      }, 300);
+    }, 5000);
+
+    // Scroll to the success message if not visible
+    successAlert.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  async function updateTotalCounts() {
+
+    // Update the counts of each type of calculation and total number of calculations
+
+    try {
+
+      const params = new URLSearchParams();
+      const startTime = document.getElementById("startTime").value || "";
+      const endTime = document.getElementById("endTime").value || "";
+      if (startTime) params.append("start_time", startTime);
+      if (endTime) params.append("end_time", endTime);
+
+      const response = await fetch(`/statistics/total-calculations?${params.toString()}`, {
+        headers: { "Authorization": `Bearer ${token}`}
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.clear();
+          window.location.href = "/login";
+          return;
+        }
+        throw new Error("Failed to fetch calculation totals");
+      }
+
+      const stats = await response.json();
+      let total = 0;
+      stats.forEach(stat => {
+        const calcType = stat["type"];
+        const count = stat["count"];
+        document.getElementById(`${calcType}CalcTotal`).innerText = count;
+        total += count;
+      });
+      document.getElementById("allCalcTotal").innerText = total;
+    } catch (err) {
+      showError(err.message || "Error showing calculation totals");
+    }
+  }
+
+  let pieChart = null;
+  async function updatePieChart() {
+
+    // Update the Pie chart showing the frequency of each calculation type (ex. total addition calculation divided by total calculation)
+
+    const addition = parseInt(document.getElementById("additionCalcTotal").textContent) || 0;
+    const subtraction = parseInt(document.getElementById("subtractionCalcTotal").textContent) || 0;
+    const multiplication = parseInt(document.getElementById("multiplicationCalcTotal").textContent) || 0;
+    const division = parseInt(document.getElementById("divisionCalcTotal").textContent) || 0;
+    const all = parseInt(document.getElementById("allCalcTotal").textContent) || 0;
+    const ctx = document.getElementById("calcsPie");
+
+    if (pieChart) pieChart.destroy();
+
+    if (all === 0) {
+      ctx.classList.add("hidden");
+      return;
+    }
+
+    ctx.classList.remove("hidden");
+
+    pieChart = new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: ["Add", "Subtract", "Multiply", "Divide"],
+        datasets: [{
+          data: [addition, subtraction, multiplication, division],
+          backgroundColor: ["#3b82f6", "#ef4444", "#f59e0b", "#10b981"]
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "left",
+            align: "center",
+            labels: {
+              padding: 12,
+              boxWidth: 14,
+              boxHeight: 14,
+              usePointStyle: true,
+              pointStyle: "rect",
+              display: false
+            }
+          },
+          datalabels: {
+            color: "#000",
+            font: {
+              weight: "bold",
+              size: 12
+            },
+            formatter: (value, ctx) => {
+              const data = ctx.chart.data.datasets[0].data;
+              const total = data.reduce((a, b) => a + b, 0);
+              const pct = (value / total) * 100;
+              return pct < 5 ? "" : pct.toFixed(0) + "%";
+            }
+          }
+        }
+      }
+    });
+  }
+
+  async function calculateAllStats() {
+    await updateTotalCounts();
+    updatePieChart();
+  }
+
+  document.getElementById("filterBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    calculateAllStats();
+  });
+
+  calculateAllStats();
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+  flatpickr("#startTime", {
+    enableTime: true,
+    dateFormat: "Y-m-d H:i:S",
+    time_24hr: false,
+    minuteIncrement: 1,
+    secondIncrement: 1,
+    enableSeconds: true
+  });
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+  flatpickr("#endTime", {
+    enableTime: true,
+    dateFormat: "Y-m-d H:i:S",
+    time_24hr: false,
+    minuteIncrement: 1,
+    secondIncrement: 1,
+    enableSeconds: true
+  });
+});
+</script>
+{% endblock %}

@@ -6,7 +6,6 @@ import subprocess
 import time
 
 from contextlib import contextmanager
-from faker import Faker
 from playwright.sync_api import Browser, sync_playwright
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -29,21 +28,6 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-
-fake = Faker()
-Faker.seed(12345)
-
-def create_fake_user() -> dict[str, str]:
-
-    # Generate a dictionary of fake user data for testing
-
-    return {
-        'first_name': fake.first_name(),
-        'last_name': fake.last_name(),
-        'email': fake.unique.email(),
-        'username': fake.unique.user_name(),
-        'password': fake.password(length=12),
-    }
 
 def get_unique_user_data():
 
@@ -103,17 +87,11 @@ def db_session() -> Generator[Session, None, None]:
         session.close()
 
 @pytest.fixture
-def fake_user_data() -> dict[str, str]:
-
-    # Provide fake user data
-    return create_fake_user()
-
-@pytest.fixture
 def test_user(db_session: Session) -> User:
 
     # Create and return a single test user
 
-    user_data = create_fake_user()
+    user_data = get_unique_user_data()
     user = User(**user_data)
     db_session.add(user)
     db_session.commit()
@@ -127,7 +105,7 @@ def seed_users(db_session: Session, request) -> list[User]:
     # Seed mlutiple test users in the database
 
     num_users = getattr(request, 'param', 5)
-    users = [User(**create_fake_user()) for _ in range(num_users)]
+    users = [User(**get_unique_user_data()) for _ in range(num_users)]
     db_session.add_all(users)
     db_session.commit()
     logger.info(f'Seeded /{len(users)} users.')

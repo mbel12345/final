@@ -14,6 +14,7 @@ from app.database import get_engine
 from app.database.database_init import init_db
 from app.models.calculation import Calculation
 from app.models.user import User
+from app.routers.statistics import router as statistics_router
 from app.schemas.calculation import CalculationBase
 from app.schemas.calculation import CalculationResponse
 from app.schemas.calculation import CalculationUpdate
@@ -37,6 +38,8 @@ app = FastAPI(
     version='1.0.0',
     lifespan=lifespan,
 )
+
+app.include_router(statistics_router)
 
 # Mount the static files directory
 app.mount('/static', StaticFiles(directory='static'), name='static')

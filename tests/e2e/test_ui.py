@@ -296,6 +296,7 @@ def test_ui_dashboard_create_calc(page, fastapi_server):
         page.click('button:text("Calculate")')
         page.wait_for_timeout(100)
 
+    page.wait_for_selector('text=24, 10, 2.5') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(3)
 
@@ -326,6 +327,7 @@ def test_ui_dashboard_create_calc_invalid_inputs_success(page, fastapi_server):
         page.click('button:text("Calculate")')
         page.wait_for_timeout(100)
 
+    page.wait_for_selector('text=24, 10, 2.5') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(3)
 
@@ -413,6 +415,7 @@ def test_ui_dashboard_history(page, fastapi_server):
 
     goto(page, '/dashboard')
 
+    page.wait_for_selector('text=24, 10, 2.5') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(3)
 
@@ -448,6 +451,8 @@ def test_ui_dashboard_delete(page, fastapi_server):
     # Verify history has 3 rows
     login(page, user_data)
     goto(page, '/dashboard')
+
+    page.wait_for_selector('text=24, 10, 2.5') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(3)
 
@@ -464,6 +469,7 @@ def test_ui_dashboard_delete(page, fastapi_server):
 
     # Check that the rows are as expected
 
+    page.wait_for_selector('text=24, 10, 2.5') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(2)
 
@@ -584,6 +590,7 @@ def test_ui_view_calc_delete(page, fastapi_server):
 
     # Check that the rows are as expected after re-routing to dashboard
 
+    page.wait_for_selector('text=24, 10, 2.5') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(2)
 
@@ -711,6 +718,8 @@ def test_ui_edit_calc_pass(page, fastapi_server):
     # Check that the rows are updated in the dashboard
 
     goto(page, '/dashboard')
+
+    page.wait_for_selector('text=34, 10, 6') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
     expect(rows).to_have_count(3)
 

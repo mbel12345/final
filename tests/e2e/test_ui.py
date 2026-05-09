@@ -7,46 +7,19 @@ from fastapi.testclient import TestClient
 from playwright.sync_api import expect
 
 from app.main import app
+from tests.conftest import BASE_PAGE
 from tests.conftest import get_unique_user_data
+from tests.conftest import goto
+from tests.conftest import login
 from tests.conftest import register_and_login
 
 client = TestClient(app)
-
-BASE_PAGE = 'http://127.0.0.1:8002'
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 )
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------
-# Helper Functions
-# ---------------------------------------------------
-
-def goto(page, url):
-
-    '''
-    Helper function to sanitize the URL and go to it
-    '''
-
-    final_url = f"{BASE_PAGE}/{url.lstrip('/')}"
-    logger.info(f'goto: {final_url}')
-    page.goto(final_url, wait_until='commit')
-
-def login(page, user_info):
-
-    goto(page, '/login')
-
-    page.fill('#username', user_info['username'])
-    page.fill('#password', user_info['password'])
-
-    with page.expect_response('**/login') as response:
-        page.click('button:text("Sign in")')
-
-    assert response.value.status == 200
-
-    time.sleep(3)
 
 # ---------------------------------------------------
 # Home Page

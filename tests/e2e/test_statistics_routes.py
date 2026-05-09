@@ -1,22 +1,11 @@
-from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 
 from app.main import app
 from app.models import Calculation
+from tests.conftest import midnight_n_days_ago
 from tests.conftest import register_and_login
 
 client = TestClient(app)
-
-# ---------------------------------------------------
-# Helper Functions
-# ---------------------------------------------------
-
-
-def midnight_n_days_ago(num_days: int):
-
-    # Return YYYY-MM-DD 00:00:00 for the date num_days ago
-
-    return (datetime.now() - timedelta(days=num_days)).replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')
 
 
 # ---------------------------------------------------

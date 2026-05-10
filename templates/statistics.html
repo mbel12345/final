@@ -156,9 +156,49 @@
     </svg>
     Calculations Per Day
   </h2>
-  <div id="lineGraphContainer" class="flex gap-4 items-start">
-    <div class="w-70 h-70">
-      <canvas id="lineGraph"></canvas>
+  <div id="lineGraphContainer" class="w-full">
+    <canvas id="lineGraph" class="max-h-48"></canvas>
+  </div>
+</div>
+
+<!-- Average Operands Card -->
+<div
+  class="bg-white shadow-lg rounded-lg p-6 transition-all duration-300
+         hover:shadow-xl border border-gray-100"
+>
+  <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+    <svg class="w-5 h-5 mr-2 text-blue-700" fill="none" stroke="currentColor"
+     viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Three operands -->
+      <circle cx="6" cy="8" r="1.5"></circle>
+      <circle cx="12" cy="8" r="1.5"></circle>
+      <circle cx="18" cy="8" r="1.5"></circle>
+      <!-- Average bar -->
+      <line x1="5" y1="14" x2="19" y2="14"></line>
+    </svg>
+    Average Number of Operands
+  </h2>
+  <div class="overflow-x-auto rounded-lg border border-gray-200 p-4">
+    <div class="flex items-center mb-2">
+      <span class="w-64">Average Add Operands:</span>
+      <span id="additionAverageOperands" class="text-right flex-1"></span>
+    </div>
+    <div class="flex items-center mb-2">
+      <span class="w-64">Average Subtract Operands:</span>
+      <span id="subtractionAverageOperands" class="text-right flex-1"></span>
+    </div>
+    <div class="flex items-center mb-2">
+      <span class="w-64">Average Multiply Operands:</span>
+      <span id="multiplicationAverageOperands" class="text-right flex-1"></span>
+    </div>
+    <div class="flex items-center mb-2">
+      <span class="w-64">Average Divide Operands:</span>
+      <span id="divisionAverageOperands" class="text-right flex-1"></span>
+    </div>
+    <div class="border-t-2 border-gray-400 ml-auto my-3"></div>
+    <div class="flex items-center mb-2">
+      <span class="w-64 font-bold">Average for All Calculations:</span>
+      <span id="allAverageOperands" class="text-right flex-1 font-bold"></span>
     </div>
   </div>
 </div>
@@ -433,10 +473,47 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
 
+  async function updateAverageOperands() {
+
+    // Update the average operands for each type of calculation
+
+    try {
+
+      const params = new URLSearchParams();
+      const startTime = document.getElementById("startTime").value || "";
+      const endTime = document.getElementById("endTime").value || "";
+      if (startTime) params.append("start_time", startTime);
+      if (endTime) params.append("end_time", endTime);
+
+      const response = await fetch(`/statistics/average-operands?${params.toString()}`, {
+        headers: { "Authorization": `Bearer ${token}`}
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.clear();
+          window.location.href = "/login";
+          return;
+        }
+        throw new Error("Failed to fetch average operands");
+      }
+
+      const stats = await response.json();
+      stats.forEach(stat => {
+        const calcType = stat["type"] ? stat["type"] : "all";
+        const count = stat["average"];
+        document.getElementById(`${calcType}AverageOperands`).innerText = count;
+      });
+    } catch (err) {
+      showError(err.message || "Error showing average operands totals");
+    }
+  }
+
   async function calculateAllStats() {
     await updateTotalCounts();
     updatePieChart();
     updateLineGraph();
+    updateAverageOperands();
   }
 
   document.getElementById("filterBtn").addEventListener("click", (e) => {

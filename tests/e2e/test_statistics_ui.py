@@ -62,8 +62,8 @@ def check_total_calcs_chart(page, expected):
 
     # Verify pie chart for total calculations is present and has the correct data
 
-    pie = page.locator('#calcsPie')
-    expect(pie).not_to_have_class(re.compile('hidden'))
+    expect(page.locator('#errorMessage')).to_have_text('')
+    expect(page.locator('#calcsPieContainer')).not_to_have_class(re.compile('hidden'))
     data = page.evaluate(
     '''
     () => {
@@ -256,8 +256,7 @@ def test_statistics_ui_total_calcs_no_calcs(page, fastapi_server, calc_type):
     assert page.inner_text('#subtractionCalcTotal') == '0'
     assert page.inner_text('#multiplicationCalcTotal') == '0'
     assert page.inner_text('#divisionCalcTotal') == '0'
-    pie = page.locator('#calcsPie')
-    expect(pie).to_have_class(re.compile('hidden'))
+    expect(page.locator('#calcsPieContainer')).to_have_class(re.compile('hidden'))
 
 
 # ---------------------------------------------------

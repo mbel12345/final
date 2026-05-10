@@ -138,7 +138,7 @@
       <span id="allCalcTotal" class="text-right flex-1 font-bold"></span>
     </div>
   </div>
-  <div class="flex gap-4 items-start">
+  <div id="calcsPieContainer" class="flex gap-4 items-start">
     <div class="w-70 h-70">
       <canvas id="calcsPie"></canvas>
     </div>
@@ -266,15 +266,16 @@ document.addEventListener("DOMContentLoaded", function() {
     const division = parseInt(document.getElementById("divisionCalcTotal").textContent) || 0;
     const all = parseInt(document.getElementById("allCalcTotal").textContent) || 0;
     const ctx = document.getElementById("calcsPie");
+    const ctxContainer = document.getElementById("calcsPieContainer")
 
     if (pieChart) pieChart.destroy();
 
     if (all === 0) {
-      ctx.classList.add("hidden");
+      ctxContainer.classList.add("hidden");
       return;
     }
 
-    ctx.classList.remove("hidden");
+    ctxContainer.classList.remove("hidden");
 
     pieChart = new Chart(ctx, {
       type: "pie",

@@ -257,6 +257,7 @@ def test_statistics_ui_total_calcs_no_calcs(page, fastapi_server, calc_type):
     assert page.inner_text('#subtractionCalcTotal') == '0'
     assert page.inner_text('#multiplicationCalcTotal') == '0'
     assert page.inner_text('#divisionCalcTotal') == '0'
+    page.wait_for_function("() => !Chart.getChart('calcsPie')")
     page.wait_for_selector('#calcsPieContainer.hidden', state='attached')
 
 
@@ -328,6 +329,7 @@ def test_statistics_ui_calcs_per_day_no_results(page, fastapi_server, db_session
     assert response.value.status == 200
 
     expect(page.locator('#errorMessage')).to_have_text('')
+    page.wait_for_function("() => !Chart.getChart('lineGraph')")
     page.wait_for_selector('#lineGraphContainer.hidden', state='attached')
 
 

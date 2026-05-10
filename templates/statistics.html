@@ -139,9 +139,10 @@
     </div>
   </div>
   <div id="calcsPieContainer" class="flex gap-4 items-start">
-    <div class="w-70 h-70">
+    <div id="calcsPieWrapper" class="w-70 h-70">
       <canvas id="calcsPie"></canvas>
     </div>
+    <div class="w-70 h-10 hidden" id="calcsPieMessage"></div>
   </div>
 </div>
 
@@ -157,9 +158,10 @@
     Calculations Per Day
   </h2>
   <div id="lineGraphContainer" class="w-full">
-    <div class="graph-wrapper">
+    <div id="lineGraphWrapper" class="graph-wrapper">
       <canvas id="lineGraph" class="max-h-48"></canvas>
     </div>
+    <div class="w-70 h-10 hidden" id="lineGraphMessage"></div>
   </div>
 </div>
 
@@ -308,16 +310,21 @@ document.addEventListener("DOMContentLoaded", function() {
     const division = parseInt(document.getElementById("divisionCalcTotal").textContent) || 0;
     const all = parseInt(document.getElementById("allCalcTotal").textContent) || 0;
     const ctx = document.getElementById("calcsPie");
-    const ctxContainer = document.getElementById("calcsPieContainer")
+    const ctxDiv = document.getElementById("calcsPieWrapper")
+    const ctxMessage = document.getElementById("calcsPieMessage")
 
     if (pieChart) pieChart.destroy();
 
-    if (all === 0) {
-      ctxContainer.classList.add("hidden");
+    if (all !== 0) {
+      ctxMessage.innerText = "";
+      ctxMessage.classList.add("hidden");
+      ctxDiv.classList.remove("hidden");
+    } else {
+      ctxMessage.innerText = "No data for Total Calculations graph";
+      ctxMessage.classList.remove("hidden");
+      ctxDiv.classList.add("hidden");
       return;
     }
-
-    ctxContainer.classList.remove("hidden");
 
     pieChart = new Chart(ctx, {
       type: "pie",
@@ -393,16 +400,21 @@ document.addEventListener("DOMContentLoaded", function() {
       const labels = data.map(row => row.calc_date);
       const values = data.map(row => row.count);
       const ctx = document.getElementById("lineGraph");
-      const ctxContainer = document.getElementById("lineGraphContainer")
+      const ctxDiv = document.getElementById("lineGraphWrapper");
+      const ctxMessage = document.getElementById("lineGraphMessage");
 
       if (lineGraph) lineGraph.destroy();
 
-      if (data.length === 0) {
-        ctxContainer.classList.add("hidden");
+      if (data.length !== 0) {
+        ctxMessage.innerText = "";
+        ctxMessage.classList.add("hidden");
+        ctxDiv.classList.remove("hidden");
+      } else {
+        ctxMessage.innerText = "No data for Calculations per Day graph";
+        ctxMessage.classList.remove("hidden");
+        ctxDiv.classList.add("hidden");
         return;
       }
-
-      ctxContainer.classList.remove("hidden");
 
       lineGraph = new Chart(ctx, {
         type: "line",

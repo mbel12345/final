@@ -63,7 +63,7 @@ def check_total_calcs_chart(page, expected):
     # Verify pie chart for total calculations is present and has the correct data
 
     expect(page.locator('#errorMessage')).to_have_text('')
-    expect(page.locator('#calcsPieContainer')).not_to_have_class(re.compile('hidden'))
+    expect(page.locator('#calcsPieWrapper')).not_to_have_class(re.compile('hidden'))
     data = page.evaluate(
     '''
     () => {
@@ -79,7 +79,7 @@ def check_calcs_per_day_graph(page, expected):
     # Verify line graph for calculations per day is present and has the correct data
 
     expect(page.locator('#errorMessage')).to_have_text('')
-    expect(page.locator('#lineGraphContainer')).not_to_have_class(re.compile('hidden'))
+    expect(page.locator('#lineGraphWrapper')).not_to_have_class(re.compile('hidden'))
     data = page.evaluate(
     '''
     () => {
@@ -257,8 +257,9 @@ def test_statistics_ui_total_calcs_no_calcs(page, fastapi_server, calc_type):
     assert page.inner_text('#subtractionCalcTotal') == '0'
     assert page.inner_text('#multiplicationCalcTotal') == '0'
     assert page.inner_text('#divisionCalcTotal') == '0'
-    page.wait_for_function("() => !Chart.getChart('calcsPie')")
-    page.wait_for_selector('#calcsPieContainer.hidden', state='attached')
+
+    page.wait_for_selector('#calcsPieMessage')
+    expect(page.locator('#calcsPieMessage')).to_have_text('No data for Total Calculations graph')
 
 
 # ---------------------------------------------------
@@ -329,8 +330,6 @@ def test_statistics_ui_calcs_per_day_no_results(page, fastapi_server, db_session
     assert response.value.status == 200
 
     expect(page.locator('#errorMessage')).to_have_text('')
-    page.wait_for_function("() => !Chart.getChart('lineGraph')")
-    page.wait_for_selector('#lineGraphContainer.hidden', state='attached')
 
 
 def test_statistics_ui_calcs_per_day_all_calc_types(page, fastapi_server, db_session):
@@ -634,3 +633,6 @@ def test_statistics_ui_average_operands_no_calcs(page, fastapi_server, db_sessio
     expect(page.locator('#multiplicationAverageOperands')).to_have_text('0')
     expect(page.locator('#divisionAverageOperands')).to_have_text('0')
     expect(page.locator('#allAverageOperands')).to_have_text('0')
+
+    page.wait_for_selector('#lineGraphMessage')
+    expect(page.locator('#lineGraphMessage')).to_have_text('No data for Calculations per Day graph')

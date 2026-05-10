@@ -63,6 +63,7 @@ def check_total_calcs_chart(page, expected):
     # Verify pie chart for total calculations is present and has the correct data
 
     expect(page.locator('#errorMessage')).to_have_text('')
+    page.wait_for_selector('#calcsPieContainer.hidden', state='attached')
     expect(page.locator('#calcsPieContainer')).not_to_have_class(re.compile('hidden'))
     data = page.evaluate(
     '''
@@ -79,6 +80,7 @@ def check_calcs_per_day_graph(page, expected):
     # Verify line graph for calculations per day is present and has the correct data
 
     expect(page.locator('#errorMessage')).to_have_text('')
+    page.wait_for_selector('#lineGraphContainer.hidden', state='attached')
     expect(page.locator('#lineGraphContainer')).not_to_have_class(re.compile('hidden'))
     data = page.evaluate(
     '''
@@ -257,6 +259,7 @@ def test_statistics_ui_total_calcs_no_calcs(page, fastapi_server, calc_type):
     assert page.inner_text('#subtractionCalcTotal') == '0'
     assert page.inner_text('#multiplicationCalcTotal') == '0'
     assert page.inner_text('#divisionCalcTotal') == '0'
+    page.wait_for_selector('#calcsPieContainer.hidden', state='attached')
     expect(page.locator('#calcsPieContainer')).to_have_class(re.compile('hidden'))
 
 

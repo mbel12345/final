@@ -689,3 +689,27 @@ def test_statistics_average_operands_start_time_and_end_time_filter(db_session):
     assert data['subtraction'] == 4
     assert data['multiplication'] == 5
     assert data['division'] == 0
+
+
+def test_statistics_average_operands_no_calcs():
+
+    # Test average_operands when the user has made no calcs
+
+    # Create calculations
+    token_data = register_and_login(client)
+    access_token = token_data['access_token']
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    response = client.get(
+        '/statistics/average-operands',
+        headers=headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 5
+    data = {row['type']: row['average'] for row in data}
+    assert data[None] == 0
+    assert data['addition'] == 0
+    assert data['subtraction'] == 0
+    assert data['multiplication'] == 0
+    assert data['division'] == 0

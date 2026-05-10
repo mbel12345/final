@@ -244,7 +244,7 @@ def get_average_operands(
     total_inputs_num_items = sum([len(lst) for lst in all_inputs.values()])
     results.append({
         'type': None,
-        'average': round(total_inputs_length / total_inputs_num_items, 2),
+        'average': round(total_inputs_length / total_inputs_num_items, 2) if total_inputs_num_items != 0 else 0,
     })
 
     # If a calc type has never been done, set its average to 0

@@ -617,3 +617,26 @@ def test_statistics_average_operands_start_time_and_end_time_filter(page, fastap
     expect(page.locator('#multiplicationAverageOperands')).to_have_text('5')
     expect(page.locator('#divisionAverageOperands')).to_have_text('0')
     expect(page.locator('#allAverageOperands')).to_have_text('5')
+
+
+def test_statistics_ui_average_operands_no_calcs(page, fastapi_server, db_session):
+
+    # Test average_operands when user has made no calcs
+
+    # Login
+    user_data = register_and_login(client)
+    login(page, user_data)
+
+    # Go to stats page and click Filter
+    goto(page, '/statistics')
+    with page.expect_response("**/statistics/calculations-per-day**") as response:
+        page.click('button:text("Filter")')
+    assert response.value.status == 200
+
+    # Check results
+    expect(page.locator('#errorMessage')).to_have_text('')
+    expect(page.locator('#additionAverageOperands')).to_have_text('0')
+    expect(page.locator('#subtractionAverageOperands')).to_have_text('0')
+    expect(page.locator('#multiplicationAverageOperands')).to_have_text('0')
+    expect(page.locator('#divisionAverageOperands')).to_have_text('0')
+    expect(page.locator('#allAverageOperands')).to_have_text('0')

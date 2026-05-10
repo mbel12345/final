@@ -21,6 +21,11 @@ from app.schemas.token import (
     TokenResponse,
 )
 
+from app.schemas.statistics import (
+    TotalCalculations,
+    CalcsPerDayResponse,
+)
+
 __all__ = [
     'CalculationType',
     'CalculationBase',
@@ -36,4 +41,6 @@ __all__ = [
     'PasswordUpdate',
     'Token',
     'TokenResponse',
+    'TotalCalculations',
+    'CalcsPerDayResponse',
 ]

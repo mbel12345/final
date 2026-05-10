@@ -4,6 +4,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
   <script>Chart.register(ChartDataLabels)</script>
 {% endblock %}
@@ -117,29 +118,47 @@
   <div class="overflow-x-auto rounded-lg border border-gray-200 p-4">
     <div class="flex items-center mb-2">
       <span class="w-64">Add Calculations:</span>
-      <span id="additionCalcTotal" class="text-right flex-1">5</span>
+      <span id="additionCalcTotal" class="text-right flex-1"></span>
     </div>
     <div class="flex items-center mb-2">
       <span class="w-64">Subtract Calculations:</span>
-      <span id="subtractionCalcTotal" class="text-right flex-1">5</span>
+      <span id="subtractionCalcTotal" class="text-right flex-1"></span>
     </div>
     <div class="flex items-center mb-2">
       <span class="w-64">Multiply Calculations:</span>
-      <span id="multiplicationCalcTotal" class="text-right flex-1">5</span>
+      <span id="multiplicationCalcTotal" class="text-right flex-1"></span>
     </div>
     <div class="flex items-center mb-2">
       <span class="w-64">Subtract Calculations:</span>
-      <span id="divisionCalcTotal" class="text-right flex-1">5</span>
+      <span id="divisionCalcTotal" class="text-right flex-1"></span>
     </div>
     <div class="border-t-2 border-gray-400 ml-auto my-3"></div>
     <div class="flex items-center mb-2">
       <span class="w-64 font-bold">Total Calculations:</span>
-      <span id="allCalcTotal" class="text-right flex-1 font-bold">20</span>
+      <span id="allCalcTotal" class="text-right flex-1 font-bold"></span>
     </div>
   </div>
-  <div class="flex gap-4 items-start">
-    <div class="w-50 h-50">
+  <div id="calcsPieContainer" class="flex gap-4 items-start">
+    <div class="w-70 h-70">
       <canvas id="calcsPie"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Calculations Per Day Card -->
+<div
+  class="bg-white shadow-lg rounded-lg p-6 transition-all duration-300
+         hover:shadow-xl border border-gray-100"
+>
+  <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+    <svg class="w-5 h-5 mr-2 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10m-12 9h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v11a2 2 0 002 2z"></path>
+    </svg>
+    Calculations Per Day
+  </h2>
+  <div id="lineGraphContainer" class="flex gap-4 items-start">
+    <div class="w-70 h-70">
+      <canvas id="lineGraph"></canvas>
     </div>
   </div>
 </div>
@@ -247,15 +266,16 @@ document.addEventListener("DOMContentLoaded", function() {
     const division = parseInt(document.getElementById("divisionCalcTotal").textContent) || 0;
     const all = parseInt(document.getElementById("allCalcTotal").textContent) || 0;
     const ctx = document.getElementById("calcsPie");
+    const ctxContainer = document.getElementById("calcsPieContainer")
 
     if (pieChart) pieChart.destroy();
 
     if (all === 0) {
-      ctx.classList.add("hidden");
+      ctxContainer.classList.add("hidden");
       return;
     }
 
-    ctx.classList.remove("hidden");
+    ctxContainer.classList.remove("hidden");
 
     pieChart = new Chart(ctx, {
       type: "pie",
@@ -299,9 +319,124 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
+  let lineGraph = null;
+  async function updateLineGraph() {
+
+    // Update the Line Graph showing the calculations per day
+
+    try {
+
+      const params = new URLSearchParams();
+      const calcType = document.getElementById("calcType").value || "";
+      const startTime = document.getElementById("startTime").value || "";
+      const endTime = document.getElementById("endTime").value || "";
+      if (calcType && calcType.toLowerCase() !== 'all') params.append("calc_type", calcType);
+      if (startTime) params.append("start_time", startTime);
+      if (endTime) params.append("end_time", endTime);
+
+      const response = await fetch(`/statistics/calculations-per-day?${params.toString()}`, {
+        headers: { "Authorization": `Bearer ${token}`}
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.clear();
+          window.location.href = "/login";
+          return;
+        }
+        throw new Error("Failed to fetch calculations per day");
+      }
+
+      const data = await response.json();
+      const labels = data.map(row => row.calc_date);
+      const values = data.map(row => row.count);
+      const ctx = document.getElementById("lineGraph");
+      const ctxContainer = document.getElementById("lineGraphContainer")
+
+      if (lineGraph) lineGraph.destroy();
+
+      if (data.length === 0) {
+        ctxContainer.classList.add("hidden");
+        return;
+      }
+
+      ctxContainer.classList.remove("hidden");
+
+      lineGraph = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            borderColor: "rgb(59, 130, 246, 0.9)",
+            backgroundColor: "rgba(59, 140, 246, 0.15)",
+            borderWidth: 2,
+            tension: 0.4,
+            pointRadius: 3,
+            pointBackgroundColor: "rgba(59, 130, 246, 1)",
+            pointBorderWidth: 0
+          }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              display: false
+            },
+            datalabels: {
+              align: "top",
+              anchor: "end",
+              offset: 4,
+              color: "#fff",
+              font: {
+                size: 11,
+                weight: "500"
+              },
+              formatter: (value) => value
+            }
+          },
+          scales: {
+            x: {
+              type: "time",
+              time: {
+                unit: "day"
+              },
+              grid: {
+                display: true,
+                drawOnChartArea: true,
+                color: "rgba(0, 0, 0, 0.05)"
+              },
+              border: {
+                display: false
+              }
+            },
+            y: {
+              beginAtZero: true,
+              grid: {
+                display: true,
+                drawOnChartArea: true,
+                color: "rgba(0, 0, 0, 0.15)",
+                lineWidth: 1.2,
+                drawTicks: false
+              },
+              border: {
+                display: false
+              },
+              ticks: {
+                padding: 8
+              }
+            }
+          }
+        }
+      });
+    } catch (err) {
+      showError(err.message || "Error showing calculations per day");
+    }
+  }
+
   async function calculateAllStats() {
     await updateTotalCounts();
     updatePieChart();
+    updateLineGraph();
   }
 
   document.getElementById("filterBtn").addEventListener("click", (e) => {

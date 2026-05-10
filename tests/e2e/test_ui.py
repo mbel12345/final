@@ -327,21 +327,28 @@ def test_ui_dashboard_create_calc_invalid_inputs_success(page, fastapi_server):
         page.click('button:text("Calculate")')
         page.wait_for_timeout(100)
 
-    page.wait_for_selector('text=24, 10, 2.5') # Wait for first row to load
     rows = page.locator('#calculationsTable tr')
+    page.wait_for_selector("#calculationsTable tr:has-text('addition')")
+    page.wait_for_selector("#calculationsTable tr:has-text('subtraction')")
+    page.wait_for_selector("#calculationsTable tr:has-text('multiplication')")
+
+    # Check rows
+
+    rows = page.locator('#calculationsTable tr')
+    addition_row = page.locator("#calculationsTable tr:has-text('addition')")
+    subtraction_row = page.locator("#calculationsTable tr:has-text('subtraction')")
+    multiplication_row = page.locator("#calculationsTable tr:has-text('multiplication')")
+
     expect(rows).to_have_count(3)
 
-    expect(rows.nth(0)).to_contain_text('addition')
-    expect(rows.nth(0)).to_contain_text('24, 10, 2.5')
-    expect(rows.nth(0)).to_contain_text('36.5')
+    expect(addition_row).to_contain_text('24, 10, 2.5')
+    expect(addition_row).to_contain_text('36.5')
 
-    expect(rows.nth(1)).to_contain_text('subtraction')
-    expect(rows.nth(1)).to_contain_text('24, 10, 2.5')
-    expect(rows.nth(1)).to_contain_text('11.5')
+    expect(subtraction_row).to_contain_text('24, 10, 2.5')
+    expect(subtraction_row).to_contain_text('11.5')
 
-    expect(rows.nth(2)).to_contain_text('multiplication')
-    expect(rows.nth(2)).to_contain_text('24, 10, 2.5')
-    expect(rows.nth(2)).to_contain_text('600')
+    expect(multiplication_row).to_contain_text('24, 10, 2.5')
+    expect(multiplication_row).to_contain_text('600')
 
 def test_ui_dashboard_create_calc_single_input_fail(page, fastapi_server):
 

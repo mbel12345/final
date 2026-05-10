@@ -99,18 +99,14 @@ def register(user_create: UserCreate, db: Session = Depends(get_db)):
 
     # Register new user
 
-    print('/auth/register')
-
     user_data = dict(user_create)
     del(user_data['confirm_password'])
     try:
         user = User.register(db, user_data)
         db.commit()
         db.refresh(user)
-        print('Registration succeeded')
         return user
     except ValueError as e:
-        print(f'Register failed: {e}')
         db.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -119,8 +115,6 @@ def register(user_create: UserCreate, db: Session = Depends(get_db)):
 def login_json(user_login: UserLogin, db: Session = Depends(get_db)):
 
     # Login with JSON payload
-
-    print('/auth/login')
 
     auth_result = User.authenticate(db, user_login.username, user_login.password)
     if auth_result is None:
@@ -154,8 +148,6 @@ def login_json(user_login: UserLogin, db: Session = Depends(get_db)):
 def login_form(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
 
     # Login with form data for Swagger UI
-
-    print('/auth/token')
 
     auth_result = User.authenticate(db, form_data.username, form_data.password)
     if auth_result is None:

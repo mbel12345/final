@@ -17,6 +17,7 @@ from app.database import get_engine
 from app.database import get_sessionmaker
 from app.database.database_init import drop_db
 from app.database.database_init import init_db
+from app.models.calculation import Calculation
 from app.models.user import User
 
 test_db = 'fastapi_db'
@@ -97,6 +98,59 @@ def midnight_n_days_ago(num_days: int):
     # Return YYYY-MM-DD 00:00:00 for the date num_days ago
 
     return (datetime.now() - timedelta(days=num_days)).replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')
+
+
+def noon_n_days_ago(num_days: int):
+
+    # Return YYYY-MM-DD 00:00:00 for the date num_days ago
+
+    return (datetime.now() - timedelta(days=num_days)).replace(hour=12, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')
+
+
+def create_calcs_by_day(user_data, db_session, client):
+
+    # Create each calc on X days ago Y times
+
+    token = user_data['access_token']
+    user_id = user_data['user_id']
+    headers = {'Authorization': f'Bearer {token}'}
+
+    calc_freqs = [
+        ('addition', 0, 1),
+        ('addition', 1, 2),
+        ('addition', 2, 3),
+        ('addition', 3, 4),
+        ('addition', 4, 5),
+        ('addition', 7, 6),
+        ('multiplication', 1, 7),
+        ('multiplication', 2, 8),
+        ('multiplication', 4, 30),
+        ('multiplication', 15, 20),
+   ]
+
+    for op, days_ago, freq in calc_freqs:
+
+       for i in range(freq):
+
+            # Create calculation
+            payload = {
+                'type': op,
+                'inputs': [i, i],
+                'user_id': 'ignore',
+            }
+            response = client.post('/calculations', json=payload, headers=headers)
+            assert response.status_code == 201
+
+            # Simulate creating calculation at an older date
+            calculation = (
+                db_session.query(Calculation)
+                    .filter(Calculation.user_id == user_id)
+                    .order_by(Calculation.created_at.desc())
+                    .first()
+            )
+            calculation.created_at = noon_n_days_ago(days_ago)
+            db_session.commit()
+            db_session.refresh(calculation)
 
 
 # ---------------------------------------------------

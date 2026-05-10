@@ -63,7 +63,6 @@ def check_total_calcs_chart(page, expected):
     # Verify pie chart for total calculations is present and has the correct data
 
     expect(page.locator('#errorMessage')).to_have_text('')
-    page.wait_for_selector('#calcsPieContainer.hidden', state='attached')
     expect(page.locator('#calcsPieContainer')).not_to_have_class(re.compile('hidden'))
     data = page.evaluate(
     '''
@@ -80,7 +79,6 @@ def check_calcs_per_day_graph(page, expected):
     # Verify line graph for calculations per day is present and has the correct data
 
     expect(page.locator('#errorMessage')).to_have_text('')
-    page.wait_for_selector('#lineGraphContainer.hidden', state='attached')
     expect(page.locator('#lineGraphContainer')).not_to_have_class(re.compile('hidden'))
     data = page.evaluate(
     '''

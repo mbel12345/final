@@ -4,6 +4,7 @@ from datetime import date
 from pydantic import ValidationError
 
 from app.schemas import AverageOperandsResponse
+from app.schemas import AverageResultResponse
 from app.schemas import CalcsPerDayResponse
 from app.schemas import TotalCalculations
 
@@ -182,3 +183,56 @@ def test_schema_average_operands_response_invalid_type():
 
     with pytest.raises(ValidationError, match='Type must be one of'):
         AverageOperandsResponse(**data)
+
+
+def test_schema_average_result_response_valid():
+
+    # Test creating a valid AverageResultResponse schema
+
+    data = {
+        'type': 'addition',
+        'average': 3.3,
+    }
+
+    response = AverageResultResponse(**data)
+    assert response.type == data['type']
+    assert response.average == data['average']
+
+
+def test_schema_average_result_response_type_is_none():
+
+    # Test AverageResultResponse passes if type is None
+
+    data = {
+        'type': None,
+        'average': 3.3,
+    }
+
+    response = AverageResultResponse(**data)
+    assert response.type == data['type']
+    assert response.average == data['average']
+
+
+def test_schema_average_result_response_missing_average():
+
+    # Test AverageResultResponse fails if 'average' is missing
+
+    data = {
+        'type': 'addition',
+    }
+
+    with pytest.raises(ValidationError, match='required'):
+        AverageResultResponse(**data)
+
+
+def test_schema_average_result_response_invalid_type():
+
+    # Test AverageResultResponse fails if 'type' is invalid
+
+    data = {
+        'type': 'modulus',
+        'average': 5,
+    }
+
+    with pytest.raises(ValidationError, match='Type must be one of'):
+        AverageResultResponse(**data)

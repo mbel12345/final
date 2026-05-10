@@ -11,6 +11,7 @@ from app.database import get_db
 from app.models import CalcsPerDay
 from app.models import Calculation
 from app.schemas import AverageOperandsResponse
+from app.schemas import AverageResultResponse
 from app.schemas import CalcsPerDayResponse
 from app.schemas import CalculationType
 from app.schemas import TotalCalculations
@@ -212,6 +213,10 @@ def get_average_operands(
     db: Session = Depends(get_db),
 ):
 
+    '''
+    Get average number of operands for each calculation type
+    '''
+
     # Get inputs for each calculation
     stmt = (
         select(
@@ -239,12 +244,70 @@ def get_average_operands(
             'type': op_type,
             'average': round(sum(input_lengths) / len(input_lengths), 2),
         })
+
     # Add total average
     total_inputs_length = sum([sum(lst) for lst in all_inputs.values()])
     total_inputs_num_items = sum([len(lst) for lst in all_inputs.values()])
     results.append({
         'type': None,
         'average': round(total_inputs_length / total_inputs_num_items, 2) if total_inputs_num_items != 0 else 0,
+    })
+
+    # If a calc type has never been done, set its average to 0
+    for calc_type in CalculationType:
+        if calc_type.value not in [row['type'] for row in results]:
+            results.append({
+                'type': calc_type.value,
+                'average': 0,
+            })
+
+    return results
+
+@router.get('/average-result', response_model=list[AverageResultResponse], tags=['statistics'])
+def get_average_result(
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None,
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+
+    '''
+    Get average result for each calculation type
+    '''
+
+    # Get result for each calculation
+    stmt = (
+        select(
+            Calculation.type,
+            Calculation.result,
+        )
+        .where(Calculation.user_id == current_user.id)
+    )
+    if start_time is not None:
+        stmt = stmt.where(Calculation.created_at >= start_time)
+    if end_time is not None:
+        stmt = stmt.where(Calculation.created_at <= end_time)
+    rows = db.execute(stmt).mappings().all()
+
+    # Get the average result
+    results_by_type = {}
+    for row in rows:
+        if row['type'] not in results_by_type:
+            results_by_type[row['type']] = []
+        results_by_type[row['type']].append(row['result'])
+    results = []
+    for op_type, results_for_op_type in results_by_type.items():
+        results.append({
+            'type': op_type,
+            'average': round(sum(results_for_op_type) / len(results_for_op_type), 2),
+        })
+
+    # Add total average
+    total_result = sum([sum(lst) for lst in results_by_type.values()])
+    total_num_items = sum([len(lst) for lst in results_by_type.values()])
+    results.append({
+        'type': None,
+        'average': round(total_result / total_num_items, 2) if total_result != 0 else 0,
     })
 
     # If a calc type has never been done, set its average to 0

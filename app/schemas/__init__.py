@@ -25,6 +25,7 @@ from app.schemas.statistics import (
     TotalCalculations,
     CalcsPerDayResponse,
     AverageOperandsResponse,
+    AverageResultResponse,
 )
 
 __all__ = [
@@ -45,4 +46,5 @@ __all__ = [
     'TotalCalculations',
     'CalcsPerDayResponse',
     'AverageOperandsResponse',
+    'AverageResultResponse',
 ]

@@ -139,9 +139,10 @@
     </div>
   </div>
   <div id="calcsPieContainer" class="flex gap-4 items-start">
-    <div class="w-70 h-70">
+    <div id="calcsPieWrapper" class="w-70 h-70">
       <canvas id="calcsPie"></canvas>
     </div>
+    <div class="w-70 h-10 hidden" id="calcsPieMessage"></div>
   </div>
 </div>
 
@@ -157,9 +158,10 @@
     Calculations Per Day
   </h2>
   <div id="lineGraphContainer" class="w-full">
-    <div class="graph-wrapper">
+    <div id="lineGraphWrapper" class="graph-wrapper">
       <canvas id="lineGraph" class="max-h-48"></canvas>
     </div>
+    <div class="w-70 h-10 hidden" id="lineGraphMessage"></div>
   </div>
 </div>
 
@@ -201,6 +203,48 @@
     <div class="flex items-center mb-2">
       <span class="w-64 font-bold">Average for All Calculations:</span>
       <span id="allAverageOperands" class="text-right flex-1 font-bold"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Average Result Card -->
+<div
+  class="bg-white shadow-lg rounded-lg p-6 transition-all duration-300
+         hover:shadow-xl border border-gray-100"
+>
+  <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+    <svg class="w-5 h-5 mr-2 text-blue-700" fill="none" stroke="currentColor"
+     viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Three operands -->
+      <circle cx="6" cy="8" r="1.5"></circle>
+      <circle cx="12" cy="8" r="1.5"></circle>
+      <circle cx="18" cy="8" r="1.5"></circle>
+      <!-- Average bar -->
+      <line x1="5" y1="14" x2="19" y2="14"></line>
+    </svg>
+    Average Result
+  </h2>
+  <div class="overflow-x-auto rounded-lg border border-gray-200 p-4">
+    <div class="flex items-center mb-2">
+      <span class="w-64">Average Add Result:</span>
+      <span id="additionAverageResult" class="text-right flex-1"></span>
+    </div>
+    <div class="flex items-center mb-2">
+      <span class="w-64">Average Subtract Result:</span>
+      <span id="subtractionAverageResult" class="text-right flex-1"></span>
+    </div>
+    <div class="flex items-center mb-2">
+      <span class="w-64">Average Multiply Result:</span>
+      <span id="multiplicationAverageResult" class="text-right flex-1"></span>
+    </div>
+    <div class="flex items-center mb-2">
+      <span class="w-64">Average Divide Result:</span>
+      <span id="divisionAverageResult" class="text-right flex-1"></span>
+    </div>
+    <div class="border-t-2 border-gray-400 ml-auto my-3"></div>
+    <div class="flex items-center mb-2">
+      <span class="w-64 font-bold">Average for All Calculations:</span>
+      <span id="allAverageResult" class="text-right flex-1 font-bold"></span>
     </div>
   </div>
 </div>
@@ -308,16 +352,21 @@ document.addEventListener("DOMContentLoaded", function() {
     const division = parseInt(document.getElementById("divisionCalcTotal").textContent) || 0;
     const all = parseInt(document.getElementById("allCalcTotal").textContent) || 0;
     const ctx = document.getElementById("calcsPie");
-    const ctxContainer = document.getElementById("calcsPieContainer")
+    const ctxDiv = document.getElementById("calcsPieWrapper")
+    const ctxMessage = document.getElementById("calcsPieMessage")
 
     if (pieChart) pieChart.destroy();
 
-    if (all === 0) {
-      ctxContainer.classList.add("hidden");
+    if (all !== 0) {
+      ctxMessage.innerText = "";
+      ctxMessage.classList.add("hidden");
+      ctxDiv.classList.remove("hidden");
+    } else {
+      ctxMessage.innerText = "No data for Total Calculations graph";
+      ctxMessage.classList.remove("hidden");
+      ctxDiv.classList.add("hidden");
       return;
     }
-
-    ctxContainer.classList.remove("hidden");
 
     pieChart = new Chart(ctx, {
       type: "pie",
@@ -393,16 +442,21 @@ document.addEventListener("DOMContentLoaded", function() {
       const labels = data.map(row => row.calc_date);
       const values = data.map(row => row.count);
       const ctx = document.getElementById("lineGraph");
-      const ctxContainer = document.getElementById("lineGraphContainer")
+      const ctxDiv = document.getElementById("lineGraphWrapper");
+      const ctxMessage = document.getElementById("lineGraphMessage");
 
       if (lineGraph) lineGraph.destroy();
 
-      if (data.length === 0) {
-        ctxContainer.classList.add("hidden");
+      if (data.length !== 0) {
+        ctxMessage.innerText = "";
+        ctxMessage.classList.add("hidden");
+        ctxDiv.classList.remove("hidden");
+      } else {
+        ctxMessage.innerText = "No data for Calculations per Day graph";
+        ctxMessage.classList.remove("hidden");
+        ctxDiv.classList.add("hidden");
         return;
       }
-
-      ctxContainer.classList.remove("hidden");
 
       lineGraph = new Chart(ctx, {
         type: "line",
@@ -507,7 +561,43 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById(`${calcType}AverageOperands`).innerText = count;
       });
     } catch (err) {
-      showError(err.message || "Error showing average operands totals");
+      showError(err.message || "Error showing average operands");
+    }
+  }
+
+  async function updateAverageResult() {
+
+    // Update the average result for each type of calculation
+
+    try {
+
+      const params = new URLSearchParams();
+      const startTime = document.getElementById("startTime").value || "";
+      const endTime = document.getElementById("endTime").value || "";
+      if (startTime) params.append("start_time", startTime);
+      if (endTime) params.append("end_time", endTime);
+
+      const response = await fetch(`/statistics/average-result?${params.toString()}`, {
+        headers: { "Authorization": `Bearer ${token}`}
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.clear();
+          window.location.href = "/login";
+          return;
+        }
+        throw new Error("Failed to fetch average result");
+      }
+
+      const stats = await response.json();
+      stats.forEach(stat => {
+        const calcType = stat["type"] ? stat["type"] : "all";
+        const count = stat["average"];
+        document.getElementById(`${calcType}AverageResult`).innerText = count;
+      });
+    } catch (err) {
+      showError(err.message || "Error showing average result");
     }
   }
 
@@ -516,6 +606,7 @@ document.addEventListener("DOMContentLoaded", function() {
     updatePieChart();
     updateLineGraph();
     updateAverageOperands();
+    updateAverageResult();
   }
 
   document.getElementById("filterBtn").addEventListener("click", (e) => {

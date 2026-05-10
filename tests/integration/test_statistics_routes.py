@@ -526,7 +526,6 @@ def test_statistics_average_operands():
             'inputs': [4]*(i + 3),
             'user_id': 'ignore',
         }
-        print(payload)
         response = client.post('/calculations', json=payload, headers=headers)
         assert response.status_code == 201
 

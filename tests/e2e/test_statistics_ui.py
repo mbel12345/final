@@ -95,6 +95,7 @@ def fill_date_time_picker(page, _id, value):
 
     # Set the value of the date-picker, which is read-only and cannot be simply filled by page.fill()
 
+    page.wait_for_selector(f'#{_id}')
     page.evaluate(
         """(value) => {
             const el = document.querySelector('#ELEMENT_ID');
@@ -256,7 +257,7 @@ def test_statistics_ui_total_calcs_no_calcs(page, fastapi_server, calc_type):
     assert page.inner_text('#subtractionCalcTotal') == '0'
     assert page.inner_text('#multiplicationCalcTotal') == '0'
     assert page.inner_text('#divisionCalcTotal') == '0'
-    expect(page.locator('#calcsPieContainer')).to_have_class(re.compile('hidden'))
+    page.wait_for_selector('#calcsPieContainer.hidden', state='attached')
 
 
 # ---------------------------------------------------
@@ -327,7 +328,7 @@ def test_statistics_ui_calcs_per_day_no_results(page, fastapi_server, db_session
     assert response.value.status == 200
 
     expect(page.locator('#errorMessage')).to_have_text('')
-    expect(page.locator('#lineGraphContainer')).to_have_class(re.compile('hidden'))
+    page.wait_for_selector('#lineGraphContainer.hidden', state='attached')
 
 
 def test_statistics_ui_calcs_per_day_all_calc_types(page, fastapi_server, db_session):
@@ -423,3 +424,211 @@ def test_statistics_ui_calcs_per_day_start_filter_and_end_filter(page, fastapi_s
     page.wait_for_timeout(100)
 
     check_calcs_per_day_graph(page, [0, 5, 4])
+
+
+# ---------------------------------------------------
+# Average Operands
+# ---------------------------------------------------
+
+
+def test_statistics_ui_average_operands_basic(page, fastapi_server):
+
+    # Test listing of average operands
+
+    # Create calculations
+    user_data = register_and_login(client)
+    login(page, user_data)
+    access_token = user_data['access_token']
+    headers = {'Authorization': f'Bearer {access_token}'}
+    for i, op in enumerate(['addition', 'addition', 'subtraction', 'multiplication']):
+        payload = {
+            'type': op,
+            'inputs': [4]*(i + 3),
+            'user_id': 'ignore',
+        }
+        response = client.post('/calculations', json=payload, headers=headers)
+        assert response.status_code == 201
+
+    # Go to stats page and click Filter
+    goto(page, '/statistics')
+    with page.expect_response("**/statistics/calculations-per-day**") as response:
+        page.click('button:text("Filter")')
+    assert response.value.status == 200
+
+    # Check results
+    expect(page.locator('#errorMessage')).to_have_text('')
+    expect(page.locator('#additionAverageOperands')).to_have_text('3.5')
+    expect(page.locator('#subtractionAverageOperands')).to_have_text('5')
+    expect(page.locator('#multiplicationAverageOperands')).to_have_text('6')
+    expect(page.locator('#divisionAverageOperands')).to_have_text('0')
+    expect(page.locator('#allAverageOperands')).to_have_text('4.5')
+
+
+def test_statistics_ui_average_operands_start_time_filter(page, fastapi_server, db_session):
+
+    # Test average operands with start_time_filter
+
+    # Create calculations
+    user_data = register_and_login(client)
+    login(page, user_data)
+    access_token = user_data['access_token']
+    user_id = user_data['user_id']
+    headers = {'Authorization': f'Bearer {access_token}'}
+    for i, op in enumerate(['addition', 'addition', 'subtraction', 'multiplication', 'addition', 'division']):
+
+        # Create calculations
+        payload = {
+            'type': op,
+            'inputs': [2]*(i + 2),
+            'user_id': 'ignore',
+        }
+        response = client.post('/calculations', json=payload, headers=headers)
+        assert response.status_code == 201
+
+        # Simulate creating calculation at an older date
+        if i >= 3:
+            calculation = (
+                db_session.query(Calculation)
+                .filter(Calculation.user_id == user_id)
+                .order_by(Calculation.created_at.desc())
+                .first()
+            )
+            calculation.created_at = midnight_n_days_ago(3)
+            db_session.commit()
+            db_session.refresh(calculation)
+
+    # Go to stats page and click Filter
+    goto(page, '/statistics')
+    fill_date_time_picker(page, 'startTime', midnight_n_days_ago(2))
+    with page.expect_response("**/statistics/calculations-per-day**") as response:
+        page.click('button:text("Filter")')
+    assert response.value.status == 200
+
+    # Check results
+    expect(page.locator('#errorMessage')).to_have_text('')
+    expect(page.locator('#additionAverageOperands')).to_have_text('2.5')
+    expect(page.locator('#subtractionAverageOperands')).to_have_text('4')
+    expect(page.locator('#multiplicationAverageOperands')).to_have_text('0')
+    expect(page.locator('#divisionAverageOperands')).to_have_text('0')
+    expect(page.locator('#allAverageOperands')).to_have_text('3')
+
+
+def test_statistics_ui_average_operands_end_time_filter(page, fastapi_server, db_session):
+
+    # Test average operands with end_time_filter
+
+    # Create calculations
+    user_data = register_and_login(client)
+    login(page, user_data)
+    access_token = user_data['access_token']
+    user_id = user_data['user_id']
+    headers = {'Authorization': f'Bearer {access_token}'}
+    for i, op in enumerate(['addition', 'addition', 'subtraction', 'multiplication', 'addition', 'division']):
+
+        # Create calculations
+        payload = {
+            'type': op,
+            'inputs': [2]*(i + 2),
+            'user_id': 'ignore',
+        }
+        response = client.post('/calculations', json=payload, headers=headers)
+        assert response.status_code == 201
+
+        # Simulate creating calculation at an older date
+        if i >= 3:
+            calculation = (
+                db_session.query(Calculation)
+                .filter(Calculation.user_id == user_id)
+                .order_by(Calculation.created_at.desc())
+                .first()
+            )
+            calculation.created_at = midnight_n_days_ago(5)
+            db_session.commit()
+            db_session.refresh(calculation)
+
+    # Go to stats page and click Filter
+    goto(page, '/statistics')
+    fill_date_time_picker(page, 'endTime', midnight_n_days_ago(2))
+    with page.expect_response("**/statistics/calculations-per-day**") as response:
+        page.click('button:text("Filter")')
+    assert response.value.status == 200
+
+    # Check results
+    expect(page.locator('#errorMessage')).to_have_text('')
+    expect(page.locator('#additionAverageOperands')).to_have_text('6')
+    expect(page.locator('#subtractionAverageOperands')).to_have_text('0')
+    expect(page.locator('#multiplicationAverageOperands')).to_have_text('5')
+    expect(page.locator('#divisionAverageOperands')).to_have_text('7')
+    expect(page.locator('#allAverageOperands')).to_have_text('6')
+
+
+def test_statistics_ui_average_operands_start_time_and_end_time_filter(page, fastapi_server, db_session):
+
+    # Test average_operands with start_time_filter and end_time_filter
+
+    # Create calculations
+    user_data = register_and_login(client)
+    login(page, user_data)
+    access_token = user_data['access_token']
+    user_id = user_data['user_id']
+    headers = {'Authorization': f'Bearer {access_token}'}
+    for i, op in enumerate(['addition', 'addition', 'subtraction', 'multiplication', 'addition', 'division']):
+
+        # Create calculations
+        payload = {
+            'type': op,
+            'inputs': [2]*(i + 2),
+            'user_id': 'ignore',
+        }
+        response = client.post('/calculations', json=payload, headers=headers)
+        assert response.status_code == 201
+
+        # Simulate creating calculation at an older date
+        calculation = (
+            db_session.query(Calculation)
+            .filter(Calculation.user_id == user_id)
+            .order_by(Calculation.created_at.desc())
+            .first()
+        )
+        calculation.created_at = midnight_n_days_ago(i)
+        db_session.commit()
+        db_session.refresh(calculation)
+
+    # Go to stats page and click Filter
+    goto(page, '/statistics')
+    fill_date_time_picker(page, 'startTime', midnight_n_days_ago(4))
+    fill_date_time_picker(page, 'endTime', midnight_n_days_ago(2))
+    with page.expect_response("**/statistics/calculations-per-day**") as response:
+        page.click('button:text("Filter")')
+    assert response.value.status == 200
+
+    # Check results
+    expect(page.locator('#errorMessage')).to_have_text('')
+    expect(page.locator('#additionAverageOperands')).to_have_text('6')
+    expect(page.locator('#subtractionAverageOperands')).to_have_text('4')
+    expect(page.locator('#multiplicationAverageOperands')).to_have_text('5')
+    expect(page.locator('#divisionAverageOperands')).to_have_text('0')
+    expect(page.locator('#allAverageOperands')).to_have_text('5')
+
+
+def test_statistics_ui_average_operands_no_calcs(page, fastapi_server, db_session):
+
+    # Test average_operands when user has made no calcs
+
+    # Login
+    user_data = register_and_login(client)
+    login(page, user_data)
+
+    # Go to stats page and click Filter
+    goto(page, '/statistics')
+    with page.expect_response("**/statistics/calculations-per-day**") as response:
+        page.click('button:text("Filter")')
+    assert response.value.status == 200
+
+    # Check results
+    expect(page.locator('#errorMessage')).to_have_text('')
+    expect(page.locator('#additionAverageOperands')).to_have_text('0')
+    expect(page.locator('#subtractionAverageOperands')).to_have_text('0')
+    expect(page.locator('#multiplicationAverageOperands')).to_have_text('0')
+    expect(page.locator('#divisionAverageOperands')).to_have_text('0')
+    expect(page.locator('#allAverageOperands')).to_have_text('0')

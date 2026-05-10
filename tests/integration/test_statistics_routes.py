@@ -505,3 +505,211 @@ def test_statistics_calcs_per_day_post(db_session):
     assert response.status_code == 200
     new_data = db_session.query(CalcsPerDay).where(CalcsPerDay.user_id == user_data['user_id']).all()
     assert(len(new_data)) == 10
+
+
+# ---------------------------------------------------
+# Average Operands
+# ---------------------------------------------------
+
+
+def test_statistics_average_operands():
+
+    # Test listing of average operands
+
+    # Create calculations
+    token_data = register_and_login(client)
+    access_token = token_data['access_token']
+    headers = {'Authorization': f'Bearer {access_token}'}
+    for i, op in enumerate(['addition', 'addition', 'subtraction', 'multiplication']):
+        payload = {
+            'type': op,
+            'inputs': [4]*(i + 3),
+            'user_id': 'ignore',
+        }
+        response = client.post('/calculations', json=payload, headers=headers)
+        assert response.status_code == 201
+
+    response = client.get('/statistics/average-operands', headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 5
+    data = {row['type']: row['average'] for row in data}
+    assert data[None] == 4.5
+    assert data['addition'] == 3.5
+    assert data['subtraction'] == 5
+    assert data['multiplication'] == 6
+    assert data['division'] == 0
+
+
+def test_statistics_average_operands_start_time_filter(db_session):
+
+    # Test average operands with start_time_filter
+
+    # Create calculations
+    token_data = register_and_login(client)
+    access_token = token_data['access_token']
+    user_id = token_data['user_id']
+    headers = {'Authorization': f'Bearer {access_token}'}
+    for i, op in enumerate(['addition', 'addition', 'subtraction', 'multiplication', 'addition', 'division']):
+
+        # Create calculations
+        payload = {
+            'type': op,
+            'inputs': [2]*(i + 2),
+            'user_id': 'ignore',
+        }
+        response = client.post('/calculations', json=payload, headers=headers)
+        assert response.status_code == 201
+
+        # Simulate creating calculation at an older date
+        if i >= 3:
+            calculation = (
+                db_session.query(Calculation)
+                .filter(Calculation.user_id == user_id)
+                .order_by(Calculation.created_at.desc())
+                .first()
+            )
+            calculation.created_at = midnight_n_days_ago(3)
+            db_session.commit()
+            db_session.refresh(calculation)
+
+    response = client.get(
+        '/statistics/average-operands',
+        headers=headers,
+        params={
+            'start_time': midnight_n_days_ago(2),
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 5
+    data = {row['type']: row['average'] for row in data}
+    assert data[None] == 3
+    assert data['addition'] == 2.5
+    assert data['subtraction'] == 4
+    assert data['multiplication'] == 0
+    assert data['division'] == 0
+
+
+def test_statistics_average_operands_end_time_filter(db_session):
+
+    # Test average operands with end_time filter
+
+    # Create calculations
+    token_data = register_and_login(client)
+    access_token = token_data['access_token']
+    user_id = token_data['user_id']
+    headers = {'Authorization': f'Bearer {access_token}'}
+    for i, op in enumerate(['addition', 'addition', 'subtraction', 'multiplication', 'addition', 'division']):
+
+        # Create calculations
+        payload = {
+            'type': op,
+            'inputs': [2]*(i + 2),
+            'user_id': 'ignore',
+        }
+        response = client.post('/calculations', json=payload, headers=headers)
+        assert response.status_code == 201
+
+        # Simulate creating calculation at an older date
+        if i >= 3:
+            calculation = (
+                db_session.query(Calculation)
+                .filter(Calculation.user_id == user_id)
+                .order_by(Calculation.created_at.desc())
+                .first()
+            )
+            calculation.created_at = midnight_n_days_ago(5)
+            db_session.commit()
+            db_session.refresh(calculation)
+
+    response = client.get(
+        '/statistics/average-operands',
+        headers=headers,
+        params={
+            'end_time': midnight_n_days_ago(2),
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 5
+    data = {row['type']: row['average'] for row in data}
+    assert data[None] == 6
+    assert data['addition'] == 6
+    assert data['subtraction'] == 0
+    assert data['multiplication'] == 5
+    assert data['division'] == 7
+
+
+def test_statistics_average_operands_start_time_and_end_time_filter(db_session):
+
+    # Test average_operands with start_time and end_time filters given
+
+    # Create calculations
+    token_data = register_and_login(client)
+    access_token = token_data['access_token']
+    user_id = token_data['user_id']
+    headers = {'Authorization': f'Bearer {access_token}'}
+    for i, op in enumerate(['addition', 'addition', 'subtraction', 'multiplication', 'addition', 'division']):
+
+        # Create calculations
+        payload = {
+            'type': op,
+            'inputs': [2]*(i + 2),
+            'user_id': 'ignore',
+        }
+        response = client.post('/calculations', json=payload, headers=headers)
+        assert response.status_code == 201
+
+        # Simulate creating calculation at an older date
+        calculation = (
+            db_session.query(Calculation)
+            .filter(Calculation.user_id == user_id)
+            .order_by(Calculation.created_at.desc())
+            .first()
+        )
+        calculation.created_at = midnight_n_days_ago(i)
+        db_session.commit()
+        db_session.refresh(calculation)
+
+    response = client.get(
+        '/statistics/average-operands',
+        headers=headers,
+        params={
+            'start_time': midnight_n_days_ago(4),
+            'end_time': midnight_n_days_ago(2),
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 5
+    data = {row['type']: row['average'] for row in data}
+    assert data[None] == 5
+    assert data['addition'] == 6
+    assert data['subtraction'] == 4
+    assert data['multiplication'] == 5
+    assert data['division'] == 0
+
+
+def test_statistics_average_operands_no_calcs():
+
+    # Test average_operands when the user has made no calcs
+
+    # Create calculations
+    token_data = register_and_login(client)
+    access_token = token_data['access_token']
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    response = client.get(
+        '/statistics/average-operands',
+        headers=headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 5
+    data = {row['type']: row['average'] for row in data}
+    assert data[None] == 0
+    assert data['addition'] == 0
+    assert data['subtraction'] == 0
+    assert data['multiplication'] == 0
+    assert data['division'] == 0

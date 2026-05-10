@@ -10,6 +10,7 @@ from app.auth.dependencies import get_current_active_user
 from app.database import get_db
 from app.models import CalcsPerDay
 from app.models import Calculation
+from app.schemas import AverageOperandsResponse
 from app.schemas import CalcsPerDayResponse
 from app.schemas import CalculationType
 from app.schemas import TotalCalculations
@@ -201,3 +202,57 @@ def post_calculations_per_day(
         db.add(calcs_per_day)
         db.commit()
         db.refresh(calcs_per_day)
+
+
+@router.get('/average-operands', response_model=list[AverageOperandsResponse], tags=['statistics'])
+def get_average_operands(
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None,
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+
+    # Get inputs for each calculation
+    stmt = (
+        select(
+            Calculation.type,
+            Calculation.inputs,
+        )
+        .where(Calculation.user_id == current_user.id)
+    )
+    if start_time is not None:
+        stmt = stmt.where(Calculation.created_at >= start_time)
+    if end_time is not None:
+        stmt = stmt.where(Calculation.created_at <= end_time)
+    rows = db.execute(stmt).mappings().all()
+
+    # Get the average inputs
+    all_inputs = {}
+    for row in rows:
+        if row['type'] not in all_inputs:
+            all_inputs[row['type']] = []
+        num_inputs = len(row['inputs'])
+        all_inputs[row['type']].append(num_inputs)
+    results = []
+    for op_type, input_lengths in all_inputs.items():
+        results.append({
+            'type': op_type,
+            'average': round(sum(input_lengths) / len(input_lengths), 2),
+        })
+    # Add total average
+    total_inputs_length = sum([sum(lst) for lst in all_inputs.values()])
+    total_inputs_num_items = sum([len(lst) for lst in all_inputs.values()])
+    results.append({
+        'type': None,
+        'average': round(total_inputs_length / total_inputs_num_items, 2) if total_inputs_num_items != 0 else 0,
+    })
+
+    # If a calc type has never been done, set its average to 0
+    for calc_type in CalculationType:
+        if calc_type.value not in [row['type'] for row in results]:
+            results.append({
+                'type': calc_type.value,
+                'average': 0,
+            })
+
+    return results

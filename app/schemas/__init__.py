@@ -24,6 +24,7 @@ from app.schemas.token import (
 from app.schemas.statistics import (
     TotalCalculations,
     CalcsPerDayResponse,
+    AverageOperandsResponse,
 )
 
 __all__ = [
@@ -43,4 +44,5 @@ __all__ = [
     'TokenResponse',
     'TotalCalculations',
     'CalcsPerDayResponse',
+    'AverageOperandsResponse',
 ]

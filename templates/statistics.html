@@ -207,6 +207,48 @@
   </div>
 </div>
 
+<!-- Average Result Card -->
+<div
+  class="bg-white shadow-lg rounded-lg p-6 transition-all duration-300
+         hover:shadow-xl border border-gray-100"
+>
+  <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+    <svg class="w-5 h-5 mr-2 text-blue-700" fill="none" stroke="currentColor"
+     viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Three operands -->
+      <circle cx="6" cy="8" r="1.5"></circle>
+      <circle cx="12" cy="8" r="1.5"></circle>
+      <circle cx="18" cy="8" r="1.5"></circle>
+      <!-- Average bar -->
+      <line x1="5" y1="14" x2="19" y2="14"></line>
+    </svg>
+    Average Result
+  </h2>
+  <div class="overflow-x-auto rounded-lg border border-gray-200 p-4">
+    <div class="flex items-center mb-2">
+      <span class="w-64">Average Add Result:</span>
+      <span id="additionAverageResult" class="text-right flex-1"></span>
+    </div>
+    <div class="flex items-center mb-2">
+      <span class="w-64">Average Subtract Result:</span>
+      <span id="subtractionAverageResult" class="text-right flex-1"></span>
+    </div>
+    <div class="flex items-center mb-2">
+      <span class="w-64">Average Multiply Result:</span>
+      <span id="multiplicationAverageResult" class="text-right flex-1"></span>
+    </div>
+    <div class="flex items-center mb-2">
+      <span class="w-64">Average Divide Result:</span>
+      <span id="divisionAverageResult" class="text-right flex-1"></span>
+    </div>
+    <div class="border-t-2 border-gray-400 ml-auto my-3"></div>
+    <div class="flex items-center mb-2">
+      <span class="w-64 font-bold">Average for All Calculations:</span>
+      <span id="allAverageResult" class="text-right flex-1 font-bold"></span>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 
@@ -519,7 +561,43 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById(`${calcType}AverageOperands`).innerText = count;
       });
     } catch (err) {
-      showError(err.message || "Error showing average operands totals");
+      showError(err.message || "Error showing average operands");
+    }
+  }
+
+  async function updateAverageResult() {
+
+    // Update the average result for each type of calculation
+
+    try {
+
+      const params = new URLSearchParams();
+      const startTime = document.getElementById("startTime").value || "";
+      const endTime = document.getElementById("endTime").value || "";
+      if (startTime) params.append("start_time", startTime);
+      if (endTime) params.append("end_time", endTime);
+
+      const response = await fetch(`/statistics/average-result?${params.toString()}`, {
+        headers: { "Authorization": `Bearer ${token}`}
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.clear();
+          window.location.href = "/login";
+          return;
+        }
+        throw new Error("Failed to fetch average result");
+      }
+
+      const stats = await response.json();
+      stats.forEach(stat => {
+        const calcType = stat["type"] ? stat["type"] : "all";
+        const count = stat["average"];
+        document.getElementById(`${calcType}AverageResult`).innerText = count;
+      });
+    } catch (err) {
+      showError(err.message || "Error showing average result");
     }
   }
 
@@ -528,6 +606,7 @@ document.addEventListener("DOMContentLoaded", function() {
     updatePieChart();
     updateLineGraph();
     updateAverageOperands();
+    updateAverageResult();
   }
 
   document.getElementById("filterBtn").addEventListener("click", (e) => {

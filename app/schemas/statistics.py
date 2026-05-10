@@ -80,3 +80,41 @@ class CalcsPerDayResponse(BaseModel):
             ],
         },
     )
+
+class AverageOperandsResponse(BaseModel):
+
+    type: Optional[CalculationType] = Field(
+        None,
+        description='Type of calculation (addition, subtraction, multiplication, division)',
+        example='addition',
+    )
+
+    average: float = Field(
+        ...,
+        description='Average number of operands for the calculation type',
+        example=15,
+    )
+
+    @field_validator('type', mode='before')
+    @classmethod
+    def validate_type(cls, v):
+
+        if v is None:
+            return None
+
+        allowed = {e.value for e in CalculationType}
+        if not isinstance(v, str) or v.lower() not in allowed:
+            raise ValueError(f"Type must be one of: {', '.join(sorted(allowed))}")
+
+        return v.lower()
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            'examples': [
+                {'type': 'addition', 'average': 2},
+                {'type': 'subtraction', 'average': 5.6},
+                {'type': None, 'average': 3.5},
+            ],
+        },
+    )

@@ -467,3 +467,41 @@ def test_statistics_calcs_per_day_cached(db_session):
 
         results = db_session.query(CalcsPerDay).where(CalcsPerDay.user_id == user_data['user_id']).all()
         assert(len(results)) == 15
+
+
+def test_statistics_calcs_per_day_post(db_session):
+
+    # Test CalcsPerDay post
+
+    # Get auth info
+    user_data = register_and_login(client)
+    access_token = user_data['access_token']
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    # Prepare payload
+    payload = [
+        {'calc_date': '2026-03-25', 'count': 40},
+        {'calc_date': '2026-03-26', 'count': 30},
+        {'calc_date': '2026-03-30', 'count': 80},
+        {'calc_date': '2026-03-01', 'count': 45},
+        {'calc_date': '2026-04-01', 'count': 100},
+        {'calc_date': '2026-04-02', 'count': 5},
+        {'calc_date': '2026-04-03', 'count': 40},
+        {'calc_date': '2026-04-04', 'count': 68},
+        {'calc_date': '2026-04-05', 'count': 30},
+        {'calc_date': '2026-04-09', 'count': 90},
+    ]
+    for row in payload:
+        row['type'] = 'addition'
+
+    # Send payload
+    response = client.post(
+        '/statistics/calculations-per-day',
+        headers=headers,
+        json=payload,
+    )
+
+    # Validate response and database
+    assert response.status_code == 200
+    new_data = db_session.query(CalcsPerDay).where(CalcsPerDay.user_id == user_data['user_id']).all()
+    assert(len(new_data)) == 10

@@ -183,3 +183,21 @@ def get_calculations_per_day(
         current += timedelta(days=1)
 
     return results
+
+
+@router.post('/calculations-per-day', response_class=HTMLResponse, tags=['statistics'])
+def post_calculations_per_day(
+    data: list[CalcsPerDayResponse],
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+
+    # Needed for testing with historical data for the line graph
+
+    for row in data:
+        row = row.model_dump()
+        row['user_id'] = current_user.id
+        calcs_per_day = CalcsPerDay(**row)
+        db.add(calcs_per_day)
+        db.commit()
+        db.refresh(calcs_per_day)

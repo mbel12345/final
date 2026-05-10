@@ -7,6 +7,7 @@ from playwright.sync_api import expect
 
 from app.main import app
 from app.models import Calculation
+from tests.conftest import create_calcs_by_day
 from tests.conftest import goto
 from tests.conftest import login
 from tests.conftest import midnight_n_days_ago
@@ -68,6 +69,22 @@ def check_total_calcs_chart(page, expected):
     () => {
     const chart = Chart.getChart('calcsPie');
     return chart.data.datasets[0].data;
+    }
+    '''
+    )
+    assert data == expected
+
+def check_calcs_per_day_graph(page, expected):
+
+    # Verify line graph for calculations per day is present and has the correct data
+
+    expect(page.locator('#errorMessage')).to_have_text('')
+    expect(page.locator('#lineGraphContainer')).not_to_have_class(re.compile('hidden'))
+    data = page.evaluate(
+    '''
+    () => {
+    const graph = Chart.getChart('lineGraph');
+    return graph.data.datasets[0].data;
     }
     '''
     )
@@ -241,3 +258,169 @@ def test_statistics_ui_total_calcs_no_calcs(page, fastapi_server, calc_type):
     assert page.inner_text('#divisionCalcTotal') == '0'
     pie = page.locator('#calcsPie')
     expect(pie).to_have_class(re.compile('hidden'))
+
+
+# ---------------------------------------------------
+# Calculations Per Day
+# ---------------------------------------------------
+
+
+def test_statistics_ui_calcs_per_day_addition(page, fastapi_server, db_session):
+
+    # Test CalcsPerDay with addition
+
+    # Create calculations
+    user_data = register_and_login(client)
+    login(page, user_data)
+    create_calcs_by_day(user_data, db_session, client)
+
+    goto(page, '/statistics')
+
+    page.select_option('#calcType', 'Addition')
+    with page.expect_response("**/statistics/calculations-per-day**") as response:
+        page.click('button:text("Filter")')
+    assert response.value.status == 200
+
+    page.wait_for_timeout(100)
+
+    check_calcs_per_day_graph(page, [6, 0, 0, 5, 4, 3, 2, 1])
+
+
+def test_statistics_ui_calcs_per_day_multiplication(page, fastapi_server, db_session):
+
+    # Test CalcsPerDay with multiplication
+
+    # Create calculations
+    user_data = register_and_login(client)
+    login(page, user_data)
+    create_calcs_by_day(user_data, db_session, client)
+
+    goto(page, '/statistics')
+
+    page.select_option('#calcType', 'Multiplication')
+    with page.expect_response("**/statistics/calculations-per-day**") as response:
+        page.click('button:text("Filter")')
+    assert response.value.status == 200
+
+    page.wait_for_timeout(100)
+
+    check_calcs_per_day_graph(page, [
+        20,  0, 0, 0, 0,
+         0,  0, 0, 0, 0,
+         0, 30, 0, 8, 7
+    ])
+
+
+def test_statistics_ui_calcs_per_day_no_results(page, fastapi_server, db_session):
+
+    # Test CalcsPerDay with division (no results)
+
+    # Create calculations
+    user_data = register_and_login(client)
+    login(page, user_data)
+    create_calcs_by_day(user_data, db_session, client)
+
+    goto(page, '/statistics')
+
+    page.select_option('#calcType', 'Division')
+    with page.expect_response("**/statistics/calculations-per-day**") as response:
+        page.click('button:text("Filter")')
+    assert response.value.status == 200
+
+    expect(page.locator('#errorMessage')).to_have_text('')
+    expect(page.locator('#lineGraphContainer')).to_have_class(re.compile('hidden'))
+
+
+def test_statistics_ui_calcs_per_day_all_calc_types(page, fastapi_server, db_session):
+
+    # Test CalcsPerDay for all calc types
+
+    # Create calculations
+    user_data = register_and_login(client)
+    login(page, user_data)
+    create_calcs_by_day(user_data, db_session, client)
+
+    goto(page, '/statistics')
+
+    page.select_option('#calcType', 'All')
+    with page.expect_response("**/statistics/calculations-per-day**") as response:
+        page.click('button:text("Filter")')
+    assert response.value.status == 200
+
+    page.wait_for_timeout(100)
+
+    # x + y means total_addition_cals + total_multiplication_calcs
+    expected = [
+        0 + 20, 0 +  0, 0 + 0, 0 + 0, 0 + 0,
+        0 +  0, 0 +  0, 0 + 0, 6 + 0, 0 + 0,
+        0 +  0, 5 + 30, 4 + 0, 3 + 8, 2 + 7,
+        1 + 0
+    ]
+    check_calcs_per_day_graph(page, expected)
+
+
+def test_statistics_ui_calcs_per_day_start_filter(page, fastapi_server, db_session):
+
+    # Test CalcsPerDay with start_time filter
+
+    # Create calculations
+    user_data = register_and_login(client)
+    login(page, user_data)
+    create_calcs_by_day(user_data, db_session, client)
+
+    goto(page, '/statistics')
+
+    page.select_option('#calcType', 'Addition')
+    fill_date_time_picker(page, 'startTime', midnight_n_days_ago(5))
+    with page.expect_response("**/statistics/calculations-per-day**") as response:
+        page.click('button:text("Filter")')
+    assert response.value.status == 200
+
+    page.wait_for_timeout(100)
+
+    check_calcs_per_day_graph(page, [0, 5, 4, 3, 2, 1])
+
+
+def test_statistics_ui_calcs_per_day_end_filter(page, fastapi_server, db_session):
+
+    # Test CalcsPerDay with end_time filter
+
+    # Create calculations
+    user_data = register_and_login(client)
+    login(page, user_data)
+    create_calcs_by_day(user_data, db_session, client)
+
+    goto(page, '/statistics')
+
+    page.select_option('#calcType', 'Addition')
+    fill_date_time_picker(page, 'endTime', midnight_n_days_ago(3))
+    with page.expect_response("**/statistics/calculations-per-day**") as response:
+        page.click('button:text("Filter")')
+    assert response.value.status == 200
+
+    page.wait_for_timeout(100)
+
+    check_calcs_per_day_graph(page, [6, 0, 0, 5, 4])
+
+
+def test_statistics_ui_calcs_per_day_start_filter_and_end_filter(page, fastapi_server, db_session):
+
+    # Test CalcsPerDay with start_time filter and end_time filter
+
+    # Create calculations
+    user_data = register_and_login(client)
+    login(page, user_data)
+    create_calcs_by_day(user_data, db_session, client)
+
+    goto(page, '/statistics')
+
+    page.select_option('#calcType', 'Addition')
+    fill_date_time_picker(page, 'startTime', midnight_n_days_ago(5))
+    fill_date_time_picker(page, 'endTime', midnight_n_days_ago(3))
+    with page.expect_response("**/statistics/calculations-per-day**") as response:
+        page.click('button:text("Filter")')
+    assert response.value.status == 200
+
+    page.wait_for_timeout(100)
+
+    check_calcs_per_day_graph(page, [0, 5, 4])

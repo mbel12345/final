@@ -562,14 +562,15 @@ def test_statistics_ui_average_operands_end_time_filter(page, fastapi_server, db
     expect(page.locator('#allAverageOperands')).to_have_text('6')
 
 
-def test_statistics_average_operands_start_time_and_end_time_filter(page, fastapi_server, db_session):
+def test_statistics_ui_average_operands_start_time_and_end_time_filter(page, fastapi_server, db_session):
 
     # Test average_operands with start_time_filter and end_time_filter
 
     # Create calculations
-    token_data = register_and_login(client)
-    access_token = token_data['access_token']
-    user_id = token_data['user_id']
+    user_data = register_and_login(client)
+    login(page, user_data)
+    access_token = user_data['access_token']
+    user_id = user_data['user_id']
     headers = {'Authorization': f'Bearer {access_token}'}
     for i, op in enumerate(['addition', 'addition', 'subtraction', 'multiplication', 'addition', 'division']):
 
@@ -592,15 +593,6 @@ def test_statistics_average_operands_start_time_and_end_time_filter(page, fastap
         calculation.created_at = midnight_n_days_ago(i)
         db_session.commit()
         db_session.refresh(calculation)
-
-    response = client.get(
-        '/statistics/average-operands',
-        headers=headers,
-        params={
-            'start_time': midnight_n_days_ago(4),
-            'end_time': midnight_n_days_ago(2),
-        },
-    )
 
     # Go to stats page and click Filter
     goto(page, '/statistics')

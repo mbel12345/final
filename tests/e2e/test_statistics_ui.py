@@ -328,6 +328,7 @@ def test_statistics_ui_calcs_per_day_no_results(page, fastapi_server, db_session
     assert response.value.status == 200
 
     expect(page.locator('#errorMessage')).to_have_text('')
+    page.wait_for_selector('#lineGraphContainer.hidden', state='attached')
     expect(page.locator('#lineGraphContainer')).to_have_class(re.compile('hidden'))
 
 

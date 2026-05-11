@@ -15,21 +15,21 @@ User can filter basesd on Calculation Type (for the Calculations Per Day), Start
 
 User can easily switch between the Dashboard and Statistics pages using the Navigation at the top.
 
-To demonstrate adding a new database model, I created CalcsPerDay table (a cache) that stores user_id, calc_type, date, count.
-This table is intended to be updated daily (if this was in a PROD environment), so that computing the count does not have to be re-done for days farther back than a week ago.
-For a given user-calc_type-date combo, if it is not in the cache and/or it is less than 7 days ago, CalcsPerDay is recalculated on the fly to ensure the data does not become stale.
+To demonstrate adding a new database model, I created CalcsPerDay table (a cache) that stores user_id, calc_type, date, count.<br>
+This table is intended to be updated daily (if this was in a PROD environment), so that computing the count does not have to be re-done for days farther back than a week ago.<br>
+For a given user-calc_type-date combo, if it is not in the cache and/or it is less than 7 days ago, CalcsPerDay is recalculated on the fly to ensure the data does not become stale.<br>
 These recalculations are saved/cached to CalcsPerDay.
 
 I added schemas for each response type in the /statistics API calls.
 
 I placed all /statistics routes in routers/statistics.py and all HTML for statistics in templates/statistics.html.
 
-All statistics tests are either in tests/integration/test_statistics_routes.py or tests/e2e/test_statistics_ui.py.
-Another test improvement was standardizing the creation of dummy data to prevent duplicate user failures when running without dropping DB first (always use get_unique_user_data function).
+All statistics tests are either in tests/integration/test_statistics_routes.py or tests/e2e/test_statistics_ui.py.<br>
+Another test improvement was standardizing the creation of dummy data to prevent duplicate user failures when running without dropping DB first (always use get_unique_user_data function).<br>
 Various functions such as goto (for playwright) and login (in UI) were moved to conftest.py to allow me to reuse code and separate the statistics test from the ever-growing test_routes.py and test_ui.py.
 
-To help test the Calculations Per Day line graph in the UI (in addition to playwright tests), I wrote a standalone python script that writes dummy data to CalcsPerDay for previous dates.
-To run the script:
+To help test the Calculations Per Day line graph in the UI (in addition to playwright tests), I wrote a standalone python script that writes dummy data to CalcsPerDay for previous dates.<br>
+To run the script:<br>
 python3 -m tests.e2e.add_test_data
 
 # Project Setup
@@ -88,7 +88,7 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 ```
 
 ## Configure Github Actions
-Github Actions will run on any pushes or pull requests. Only pull requests will result in the deployment step.
+Github Actions will run on any pushes or pull requests. Only pull requests will result in the deployment step.<br>
 Pre-requisite: In Dockerhub, create an Access Token, then add it to Environment var "DOCKERHUB_TOKEN" in GitHub. Add DOCKERHUB_USERNAME also.
 
 Add these environment variables in Github:

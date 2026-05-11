@@ -1,6 +1,7 @@
 # Repos
 Github: https://github.com/mbel12345/final/<br>
-Dockerhub: https://hub.docker.com/r/msb64/final/
+Dockerhub: https://hub.docker.com/r/msb64/final/<br>
+Submission Doc / Reflection: https://github.com/mbel12345/final/blob/main/IS%20601%20-%20Final.docx
 
 # New Feature (Statistics Page)
 

@@ -27,6 +27,15 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------
 
 
+def go_to_statistics(page):
+
+    # Go to /statistics page and wait for network requests to execute
+
+    with page.expect_response('**/statistics/calculations-per-day**') as response:
+        goto(page, '/statistics')
+    assert response.value.status == 200
+
+
 def create_calcs(user_data, db_session):
 
     # Create several calculations, each on different day (so that time filters can be tested)
@@ -73,6 +82,7 @@ def check_total_calcs_chart(page, expected):
     '''
     )
     assert data == expected
+
 
 def check_calcs_per_day_graph(page, expected):
 
@@ -127,7 +137,7 @@ def test_statistics_ui_total_calcs_basic(page, fastapi_server, db_session, calc_
     login(page, user_data)
     create_calcs(user_data, db_session)
 
-    goto(page, '/statistics')
+    go_to_statistics(page)
 
     page.select_option('#calcType', calc_type)
     page.click('button:text("Filter")')
@@ -156,7 +166,7 @@ def test_statistics_ui_total_calcs_start_filter(page, fastapi_server, db_session
     login(page, user_data)
     create_calcs(user_data, db_session)
 
-    goto(page, '/statistics')
+    go_to_statistics(page)
 
     page.select_option('#calcType', calc_type)
     fill_date_time_picker(page, 'startTime', midnight_n_days_ago(3))
@@ -186,7 +196,7 @@ def test_statistics_ui_total_calcs_end_filter(page, fastapi_server, db_session, 
     login(page, user_data)
     create_calcs(user_data, db_session)
 
-    goto(page, '/statistics')
+    go_to_statistics(page)
 
     page.select_option('#calcType', calc_type)
     fill_date_time_picker(page, 'endTime', midnight_n_days_ago(3))
@@ -216,7 +226,7 @@ def test_statistics_ui_total_calcs_start_filter_and_end_filter(page, fastapi_ser
     login(page, user_data)
     create_calcs(user_data, db_session)
 
-    goto(page, '/statistics')
+    go_to_statistics(page)
 
     page.select_option('#calcType', calc_type)
     fill_date_time_picker(page, 'startTime', midnight_n_days_ago(3))
@@ -246,7 +256,7 @@ def test_statistics_ui_total_calcs_no_calcs(page, fastapi_server, calc_type):
     user_data = register_and_login(client)
     login(page, user_data)
 
-    goto(page, '/statistics')
+    go_to_statistics(page)
 
     page.select_option('#calcType', calc_type)
     page.click('button:text("Filter")')
@@ -276,7 +286,7 @@ def test_statistics_ui_calcs_per_day_addition(page, fastapi_server, db_session):
     login(page, user_data)
     create_calcs_by_day(user_data, db_session, client)
 
-    goto(page, '/statistics')
+    go_to_statistics(page)
 
     page.select_option('#calcType', 'Addition')
     with page.expect_response('**/statistics/calculations-per-day**') as response:
@@ -297,7 +307,7 @@ def test_statistics_ui_calcs_per_day_multiplication(page, fastapi_server, db_ses
     login(page, user_data)
     create_calcs_by_day(user_data, db_session, client)
 
-    goto(page, '/statistics')
+    go_to_statistics(page)
 
     page.select_option('#calcType', 'Multiplication')
     with page.expect_response('**/statistics/calculations-per-day**') as response:
@@ -322,7 +332,7 @@ def test_statistics_ui_calcs_per_day_no_results(page, fastapi_server, db_session
     login(page, user_data)
     create_calcs_by_day(user_data, db_session, client)
 
-    goto(page, '/statistics')
+    go_to_statistics(page)
 
     page.select_option('#calcType', 'Division')
     with page.expect_response('**/statistics/calculations-per-day**') as response:
@@ -341,7 +351,7 @@ def test_statistics_ui_calcs_per_day_all_calc_types(page, fastapi_server, db_ses
     login(page, user_data)
     create_calcs_by_day(user_data, db_session, client)
 
-    goto(page, '/statistics')
+    go_to_statistics(page)
 
     page.select_option('#calcType', 'All')
     with page.expect_response('**/statistics/calculations-per-day**') as response:
@@ -369,7 +379,7 @@ def test_statistics_ui_calcs_per_day_start_filter(page, fastapi_server, db_sessi
     login(page, user_data)
     create_calcs_by_day(user_data, db_session, client)
 
-    goto(page, '/statistics')
+    go_to_statistics(page)
 
     page.select_option('#calcType', 'Addition')
     fill_date_time_picker(page, 'startTime', midnight_n_days_ago(5))
@@ -391,7 +401,7 @@ def test_statistics_ui_calcs_per_day_end_filter(page, fastapi_server, db_session
     login(page, user_data)
     create_calcs_by_day(user_data, db_session, client)
 
-    goto(page, '/statistics')
+    go_to_statistics(page)
 
     page.select_option('#calcType', 'Addition')
     fill_date_time_picker(page, 'endTime', midnight_n_days_ago(3))
@@ -413,7 +423,7 @@ def test_statistics_ui_calcs_per_day_start_filter_and_end_filter(page, fastapi_s
     login(page, user_data)
     create_calcs_by_day(user_data, db_session, client)
 
-    goto(page, '/statistics')
+    go_to_statistics(page)
 
     page.select_option('#calcType', 'Addition')
     fill_date_time_picker(page, 'startTime', midnight_n_days_ago(5))
@@ -451,7 +461,7 @@ def test_statistics_ui_average_operands_basic(page, fastapi_server):
         assert response.status_code == 201
 
     # Go to stats page and click Filter
-    goto(page, '/statistics')
+    go_to_statistics(page)
     with page.expect_response('**/statistics/calculations-per-day**') as response:
         page.click('button:text("Filter")')
     assert response.value.status == 200
@@ -499,7 +509,7 @@ def test_statistics_ui_average_operands_start_time_filter(page, fastapi_server, 
             db_session.refresh(calculation)
 
     # Go to stats page and click Filter
-    goto(page, '/statistics')
+    go_to_statistics(page)
     fill_date_time_picker(page, 'startTime', midnight_n_days_ago(2))
     with page.expect_response('**/statistics/calculations-per-day**') as response:
         page.click('button:text("Filter")')
@@ -548,7 +558,7 @@ def test_statistics_ui_average_operands_end_time_filter(page, fastapi_server, db
             db_session.refresh(calculation)
 
     # Go to stats page and click Filter
-    goto(page, '/statistics')
+    go_to_statistics(page)
     fill_date_time_picker(page, 'endTime', midnight_n_days_ago(2))
     with page.expect_response('**/statistics/calculations-per-day**') as response:
         page.click('button:text("Filter")')
@@ -596,7 +606,7 @@ def test_statistics_ui_average_operands_start_time_and_end_time_filter(page, fas
         db_session.refresh(calculation)
 
     # Go to stats page and click Filter
-    goto(page, '/statistics')
+    go_to_statistics(page)
     fill_date_time_picker(page, 'startTime', midnight_n_days_ago(4))
     fill_date_time_picker(page, 'endTime', midnight_n_days_ago(2))
     with page.expect_response('**/statistics/calculations-per-day**') as response:
@@ -621,7 +631,7 @@ def test_statistics_ui_average_operands_no_calcs(page, fastapi_server, db_sessio
     login(page, user_data)
 
     # Go to stats page and click Filter
-    goto(page, '/statistics')
+    go_to_statistics(page)
     with page.expect_response('**/statistics/calculations-per-day**') as response:
         page.click('button:text("Filter")')
     assert response.value.status == 200
@@ -662,7 +672,7 @@ def test_statistics_ui_average_result_basic(page, fastapi_server):
         assert response.status_code == 201
 
     # Go to stats page and click Filter
-    goto(page, '/statistics')
+    go_to_statistics(page)
     with page.expect_response('**/statistics/calculations-per-day**') as response:
         page.click('button:text("Filter")')
     assert response.value.status == 200
@@ -710,7 +720,7 @@ def test_statistics_ui_average_result_start_time_filter(page, fastapi_server, db
             db_session.refresh(calculation)
 
     # Go to stats page and click Filter
-    goto(page, '/statistics')
+    go_to_statistics(page)
     fill_date_time_picker(page, 'startTime', midnight_n_days_ago(2))
     with page.expect_response('**/statistics/calculations-per-day**') as response:
         page.click('button:text("Filter")')
@@ -759,7 +769,7 @@ def test_statistics_ui_average_result_end_time_filter(page, fastapi_server, db_s
             db_session.refresh(calculation)
 
     # Go to stats page and click Filter
-    goto(page, '/statistics')
+    go_to_statistics(page)
     fill_date_time_picker(page, 'endTime', midnight_n_days_ago(2))
     with page.expect_response('**/statistics/calculations-per-day**') as response:
         page.click('button:text("Filter")')
@@ -807,7 +817,7 @@ def test_statistics_ui_average_result_start_time_and_end_time_filter(page, fasta
         db_session.refresh(calculation)
 
     # Go to stats page and click Filter
-    goto(page, '/statistics')
+    go_to_statistics(page)
     fill_date_time_picker(page, 'startTime', midnight_n_days_ago(4))
     fill_date_time_picker(page, 'endTime', midnight_n_days_ago(2))
     with page.expect_response('**/statistics/calculations-per-day**') as response:
@@ -833,8 +843,8 @@ def test_statistics_ui_average_result_no_calcs(page, fastapi_server):
     access_token = user_data['access_token']
     headers = {'Authorization': f'Bearer {access_token}'}
 
-  # Go to stats page and click Filter
-    goto(page, '/statistics')
+    # Go to stats page and click Filter
+    go_to_statistics(page)
     with page.expect_response('**/statistics/calculations-per-day**') as response:
         page.click('button:text("Filter")')
     assert response.value.status == 200

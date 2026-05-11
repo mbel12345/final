@@ -29,7 +29,8 @@ logger = logging.getLogger(__name__)
 
 def go_to_statistics(page):
 
-    # Got to /statistics page and wait for network requests to execute
+    # Go to /statistics page and wait for network requests to execute
+
     with page.expect_response('**/statistics/calculations-per-day**') as response:
         goto(page, '/statistics')
     assert response.value.status == 200
@@ -842,7 +843,7 @@ def test_statistics_ui_average_result_no_calcs(page, fastapi_server):
     access_token = user_data['access_token']
     headers = {'Authorization': f'Bearer {access_token}'}
 
-  # Go to stats page and click Filter
+    # Go to stats page and click Filter
     go_to_statistics(page)
     with page.expect_response('**/statistics/calculations-per-day**') as response:
         page.click('button:text("Filter")')
